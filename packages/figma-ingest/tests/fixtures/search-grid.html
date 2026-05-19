@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>주문 조회</title>
+</head>
+<body>
+  <h2>주문 조회</h2>
+  <div class="search-area">
+    <label for="orderNo">주문번호</label>
+    <input type="text" id="orderNo" />
+    <label for="orderDate">주문일</label>
+    <input type="date" id="orderDate" />
+    <button type="button">조회</button>
+    <button type="button">초기화</button>
+  </div>
+  <div class="btn-area">
+    <button type="button">엑셀 다운로드</button>
+    <button type="button">저장</button>
+  </div>
+  <table>
+    <thead><tr><th>주문번호</th><th>주문일</th><th>금액</th></tr></thead>
+    <tbody>
+      <tr><td>O001</td><td>2026-05-01</td><td>1000</td></tr>
+      <tr><td>O002</td><td>2026-05-02</td><td>2000</td></tr>
+    </tbody>
+  </table>
+</body>
+</html>

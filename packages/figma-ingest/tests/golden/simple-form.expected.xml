@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:w2="http://www.inswave.com/websquare" xmlns:xf="http://www.w3.org/2002/xforms">
+	<head xmlns="http://www.w3.org/1999/xhtml" meta_screenId="SCREEN001" meta_screenName="사원 조회">
+		<w2:type xmlns:w2="http://www.inswave.com/websquare">COMPONENT</w2:type>
+		<w2:buildDate xmlns:w2="http://www.inswave.com/websquare"/>
+		<xf:model xmlns:xf="http://www.w3.org/2002/xforms">
+			<w2:dataCollection xmlns:w2="http://www.inswave.com/websquare">
+			</w2:dataCollection>
+		</xf:model>
+		<script type="text/javascript" lazy="false"><![CDATA[
+scwin.onpageload = function() {
+};
+]]></script>
+	</head>
+	<body ev:onpageload="scwin.onpageload">
+		<xf:group class="sub_contents" id="" meta_componentContainer="true" meta_snippetCategory="00_화면시작" meta_snippetKeyComponent="true" meta_snippetName="0_01 페이지시작" screenno="SCREEN001" screentitle="사원 조회" style="">
+			<xf:group id="" class="titbox">
+				<w2:textbox tagname="h3" style="" id="tbx_001" label="사원 조회" class="tit_main"></w2:textbox>
+			</xf:group>
+			<xf:group class="tblbox" id="grp_search_001" meta_snippetCategory="05_입출력테이블" meta_snippetKeyComponent="true" meta_snippetName="5_02 테이블(2단)"
+				style="">
+				<xf:group class="w2tb tbl" id="" style="" tagname="table">
+					<w2:attributes>
+						<w2:summary></w2:summary>
+					</w2:attributes>
+					<xf:group tagname="colgroup">
+						<xf:group style="width:150px;" tagname="col"></xf:group>
+						<xf:group style="" tagname="col"></xf:group>
+						<xf:group style="width:150px;" tagname="col"></xf:group>
+						<xf:group style="" tagname="col"></xf:group>
+					</xf:group>
+					<xf:group style="" tagname="tr">
+						<xf:group class="w2tb_th" style="" tagname="th">
+							<w2:textbox ctype="Text" style="" id="tbx_002" label="사번" tabIndex="1" class="" hierarchy="tbx_002" orgid="tbx_002"/>
+						</xf:group>
+						<xf:group class="w2tb_td" style="" tagname="td">
+							<xf:input ctype="Edit" style="width:187px;" id="ibx_empCd" label="사번" tabIndex="1" class="" hierarchy="ibx_empCd" orgid="ibx_empCd"/>
+						</xf:group>
+						<xf:group class="w2tb_th" style="" tagname="th">
+							<w2:textbox ctype="Text" style="" id="tbx_004" label="부서" tabIndex="1" class="" hierarchy="tbx_004" orgid="tbx_004"/>
+						</xf:group>
+						<xf:group class="w2tb_td" style="" tagname="td">
+							<xf:select1 ctype="SelectBox" style="width:100px;" id="sbx_deptCd" label="부서" tabIndex="1" class="" hierarchy="sbx_deptCd" orgid="sbx_deptCd"/>
+							<xf:trigger ctype="Button" style="" id="btn_006" tabIndex="1" type="button" hierarchy="btn_006" orgid="btn_006" class="btn_cm sch"><xf:label><![CDATA[조회]]></xf:label></xf:trigger>
+						</xf:group>
+					</xf:group>
+				</xf:group>
+			</xf:group>
+			<xf:group id="" class="gvwbox">
+				<w2:gridView ctype="IBSheet" class="gvw" hierarchy="grd_007" id="grd_007" orgid="grd_007" style="width:100%; height:150px;" tabIndex="1">
+					<w2:header id="header1">
+						<w2:row>
+							<w2:column id="column1" inputType="text" value="사번" width="314"></w2:column>
+							<w2:column id="column2" inputType="text" value="성명" width="314"></w2:column>
+							<w2:column id="column3" inputType="text" value="부서명" width="416"></w2:column>
+						</w2:row>
+					</w2:header>
+					<w2:gBody id="gBody1">
+						<w2:row>
+							<w2:column id="col_1" inputType="text" width="314"></w2:column>
+							<w2:column id="col_2" inputType="text" width="314"></w2:column>
+							<w2:column id="col_3" inputType="text" width="416"></w2:column>
+						</w2:row>
+					</w2:gBody>
+				</w2:gridView>
+			</xf:group>
+		</xf:group>
+	</body>
+</html>

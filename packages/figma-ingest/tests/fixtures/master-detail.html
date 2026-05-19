@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>사원 정보 관리</title>
+</head>
+<body>
+  <h2>사원 정보 관리</h2>
+  <div class="search-area">
+    <label for="empNm">성명</label>
+    <input type="text" id="empNm" />
+    <button type="button">조회</button>
+  </div>
+  <div class="grid-wrap">
+    <table>
+      <thead><tr><th>사번</th><th>성명</th><th>부서명</th></tr></thead>
+      <tbody><tr><td>E001</td><td>홍길동</td><td>개발부</td></tr></tbody>
+    </table>
+  </div>
+  <fieldset>
+    <legend>상세 정보</legend>
+    <label for="empCdDetail">사번</label>
+    <input type="text" id="empCdDetail" disabled />
+    <label for="empNmDetail">성명</label>
+    <input type="text" id="empNmDetail" />
+    <label for="deptNmDetail">부서명</label>
+    <select id="deptNmDetail"><option>전체</option></select>
+  </fieldset>
+  <div class="btn-area">
+    <button type="button">저장</button>
+    <button type="button">취소</button>
+  </div>
+</body>
+</html>

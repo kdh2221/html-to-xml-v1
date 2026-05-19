@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>사원 조회</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    .search-area { display: flex; gap: 10px; margin-bottom: 16px; }
+    label { font-weight: 600; }
+    input, select { padding: 4px 8px; border: 1px solid #999; }
+    button { padding: 6px 16px; background: #4a7dff; color: #fff; border: none; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid #ccc; padding: 8px; }
+    th { background: #f0f4ff; }
+  </style>
+</head>
+<body>
+  <h2>사원 조회</h2>
+  <div class="search-area">
+    <label for="empCd">사번</label>
+    <input type="text" id="empCd" placeholder="사번 입력" />
+    <label for="deptCd">부서</label>
+    <select id="deptCd"><option>전체</option><option>개발부</option></select>
+    <button type="button">조회</button>
+  </div>
+  <table>
+    <thead><tr><th>사번</th><th>성명</th><th>부서명</th></tr></thead>
+    <tbody><tr><td></td><td></td><td></td></tr></tbody>
+  </table>
+</body>
+</html>

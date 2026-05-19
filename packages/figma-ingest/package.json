@@ -1,0 +1,27 @@
+{
+  "name": "@kdh/figma-ingest",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "figma-to-ws": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:golden:regenerate": "node dist/cli.js tests/fixtures/simple-form.html tests/golden/simple-form.expected.xml && node dist/cli.js tests/fixtures/search-grid.html tests/golden/search-grid.expected.xml && node dist/cli.js tests/fixtures/master-detail.html tests/golden/master-detail.expected.xml",
+    "cli": "node dist/cli.js"
+  },
+  "dependencies": {
+    "@kdh/legacy-converter": "workspace:*",
+    "cheerio": "^1.0.0",
+    "puppeteer": "^22.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.4.0",
+    "vitest": "^1.6.0"
+  }
+}

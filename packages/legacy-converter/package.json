@@ -1,0 +1,16 @@
+{
+  "name": "@kdh/legacy-converter",
+  "version": "0.1.0",
+  "private": true,
+  "main": "adapter.js",
+  "exports": {
+    ".": "./adapter.js",
+    "./adapter": "./adapter.js"
+  },
+  "scripts": {
+    "regression": "node tests/regression.smoke.js"
+  },
+  "dependencies": {
+    "jsdom": "^24.0.0"
+  }
+}
