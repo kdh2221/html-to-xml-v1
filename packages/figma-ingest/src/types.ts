@@ -50,3 +50,47 @@ export interface QualityScore {
   labelIdRatio: number;
   ariaRatio: number;
 }
+
+// ─── Phase 2A: LLM Semantic Enricher IR 타입 ─────────────────────────────
+
+export interface DataMapKeyIR {
+  id: string;         // UPPER_SNAKE, e.g., "EMP_CD"
+  name: string;       // 한글 라벨, e.g., "사번"
+  dataType: 'text' | 'number' | 'date';
+}
+
+export interface DataMapIR {
+  id: string;         // ^dma_
+  name: string;
+  keys: DataMapKeyIR[];
+}
+
+export interface DataListColumnIR {
+  id: string;         // UPPER_SNAKE | 'chk'
+  name: string;
+  dataType: 'text' | 'number' | 'date';
+}
+
+export interface DataListIR {
+  id: string;         // ^dlt_
+  name: string;
+  saveRemovedData?: boolean;
+  columns: DataListColumnIR[];
+}
+
+export interface DataCollectionIR {
+  dataMaps: DataMapIR[];
+  dataLists: DataListIR[];
+  confidence: number;
+  notes?: string;
+}
+
+export interface UsageEntry {
+  timestamp: number;
+  model: string;
+  inputTokens: number;          // 캐시 미스 부분
+  cachedInputTokens: number;    // 캐시 히트 부분
+  cacheCreationTokens: number;  // 캐시 첫 작성 시 (입력가 + 25%)
+  outputTokens: number;
+  costUsd: number;
+}
