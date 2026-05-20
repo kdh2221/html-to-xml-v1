@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { extractSearchButtons, findGroupEnd, findSearchGroupBlock, hasSearchButton } from '../../src/stage3/schbox-normalizer';
+import { extractSearchButtons, findGroupEnd, findSearchGroupBlock, hasSearchButton, transformSearchBlock } from '../../src/stage3/schbox-normalizer';
 
 const SEARCH_XML = `<body>
   <xf:group class="tblbox" id="grp_search_001" meta_snippetName="x">
@@ -94,5 +94,45 @@ describe('extractSearchButtons', () => {
     const { buttons, rest } = extractSearchButtons(block);
     expect(buttons.length).toBe(2);
     expect(rest.replace(/\s/g, '')).toBe('');
+  });
+});
+
+const GRP_SEARCH_BLOCK = `<xf:group class="tblbox" id="grp_search_001" meta_snippetName="x">
+  <xf:group class="w2tb tbl" tagname="table">
+    <xf:group tagname="tr">
+      <xf:group class="w2tb_th" tagname="th"><w2:textbox label="부서"/></xf:group>
+      <xf:group class="w2tb_td" tagname="td">
+        <xf:select1 id="sbx_deptCd" label="부서"/>
+        <xf:trigger ctype="Button" id="btn_006" type="button"><xf:label><![CDATA[조회]]></xf:label></xf:trigger>
+      </xf:group>
+    </xf:group>
+  </xf:group>
+</xf:group>`;
+
+describe('transformSearchBlock', () => {
+  it('schbox + schbox_inner#tbl_search + btn_schbox 구조 생성', () => {
+    const out = transformSearchBlock(GRP_SEARCH_BLOCK);
+    expect(out).toMatch(/^<xf:group\b[^>]*class="[^"]*\bschbox\b/);
+    expect(out).not.toContain('tblbox');
+    expect(out).not.toContain('grp_search_001');
+    expect(out).toContain('<xf:group class="schbox_inner" id="tbl_search">');
+    expect(out).toMatch(/<xf:group class="schbox_inner" id="tbl_search">\s*<xf:group class="w2tb tbl"/);
+    expect(out).toContain('<xf:group class="btn_schbox">');
+    expect(out).toContain('btn_006');
+    expect(out).toContain('<![CDATA[조회]]>');
+    const innerEnd = out.indexOf('</xf:group>', out.indexOf('schbox_inner'));
+    const btnPos = out.indexOf('btn_006');
+    expect(btnPos).toBeGreaterThan(out.indexOf('btn_schbox'));
+    expect(out).toMatch(/w2tb_td[\s\S]*sbx_deptCd/);
+  });
+
+  it('CDATA 라벨 정확히 보존', () => {
+    const out = transformSearchBlock(GRP_SEARCH_BLOCK);
+    expect(out).toContain('<xf:label><![CDATA[조회]]></xf:label>');
+  });
+
+  it('검색버튼 없는 블록은 그대로(no-op)', () => {
+    const block = `<xf:group class="tblbox" id="grp_search_001"><xf:group class="w2tb tbl"><xf:input id="x"/></xf:group></xf:group>`;
+    expect(transformSearchBlock(block)).toBe(block);
   });
 });

@@ -77,3 +77,44 @@ export function extractSearchButtons(block: string): { buttons: string[]; rest: 
   });
   return { buttons, rest };
 }
+
+/**
+ * 검색그룹 블록을 표준 schbox 구조로 변환.
+ *  - 외곽 class tblbox→schbox, grp_search id 제거
+ *  - w2tb.tbl을 schbox_inner#tbl_search로 래핑
+ *  - 검색버튼을 폼에서 떼어 btn_schbox로 이동
+ * 검색버튼 없으면 원본 반환 (no-op).
+ */
+export function transformSearchBlock(block: string): string {
+  const { buttons, rest } = extractSearchButtons(block);
+  if (buttons.length === 0) return block;
+
+  // 1. 외곽 여는 태그: tblbox→schbox, grp_search id 제거
+  let out = rest.replace(/^(<xf:group\b)([^>]*?)(>)/, (full, open, attrs, close) => {
+    let a = attrs;
+    a = a.replace(/class="([^"]*)"/, (_cm: string, cls: string) => {
+      const classes = cls.split(/\s+/).map((c) => (c === 'tblbox' ? 'schbox' : c)).filter(Boolean);
+      if (!classes.includes('schbox')) classes.push('schbox');
+      return `class="${classes.join(' ')}"`;
+    });
+    a = a.replace(/\s*\bid="grp_search[^"]*"/, '');
+    return `${open}${a}${close}`;
+  });
+
+  // 2. w2tb.tbl 그룹을 schbox_inner#tbl_search로 래핑
+  const tblOpen = out.search(/<xf:group\b[^>]*\bclass="[^"]*\bw2tb\b[^"]*"[^>]*>/);
+  if (tblOpen !== -1) {
+    const tblEnd = findGroupEnd(out, tblOpen);
+    if (tblEnd !== -1) {
+      const tblBlock = out.slice(tblOpen, tblEnd);
+      const wrapped = `<xf:group class="schbox_inner" id="tbl_search">${tblBlock}</xf:group>`;
+      out = out.slice(0, tblOpen) + wrapped + out.slice(tblEnd);
+    }
+  }
+
+  // 3. 블록 마지막 </xf:group>(외곽 schbox 닫기) 앞에 btn_schbox 삽입
+  const btnSchbox = `<xf:group class="btn_schbox">${buttons.join('')}</xf:group>`;
+  out = out.replace(/<\/xf:group>\s*$/, `${btnSchbox}</xf:group>`);
+
+  return out;
+}
