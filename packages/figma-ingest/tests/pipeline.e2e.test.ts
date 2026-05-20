@@ -149,4 +149,21 @@ describe('pipeline.convertHtmlToWebSquare with Stage 3 (Mock LLM)', () => {
     expect(xml).not.toContain('$c.sbm.execute');
     expect(xml).not.toContain('sbm_search_submitdone');
   }, 60000);
+
+  it('master-detail: 상세 입력이 DataList에 바인딩 (Phase 2C-2)', async () => {
+    const html = fs.readFileSync(path.join(FIX_DIR, 'master-detail.html'), 'utf-8');
+    const xml = await convertHtmlToWebSquare(html, { llmClient: makeMock('master-detail') });
+    expect(xml).toMatch(/id="ibx_empCdDetail"[^>]*ref="data:dlt_memberBasic\.EMP_CD"/);
+    expect(xml).toMatch(/id="ibx_empNmDetail"[^>]*ref="data:dlt_memberBasic\.EMP_NM"/);
+    expect(xml).toMatch(/id="sbx_deptNmDetail"[^>]*ref="data:dlt_memberBasic\.DEPT_NM"/);
+    expect(xml).toContain('dataList="data:dlt_memberBasic"');
+    expect(xml).toContain('$c.util.setGridViewDelCheckBox([');
+  }, 60000);
+
+  it('search-grid: 검색 입력은 dma_search 유지, DataList ref 미주입 (Phase 2C-2 회귀)', async () => {
+    const html = fs.readFileSync(path.join(FIX_DIR, 'search-grid.html'), 'utf-8');
+    const xml = await convertHtmlToWebSquare(html, { llmClient: makeMock('search-grid') });
+    expect(xml).toMatch(/id="ibx_orderNo"[^>]*ref="data:dma_search\.ORDER_NO"/);
+    expect(xml).not.toMatch(/id="ibx_orderNo"[^>]*ref="data:dlt_/);
+  }, 60000);
 });

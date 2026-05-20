@@ -84,19 +84,19 @@ scwin.onpageload = function() {
 							<w2:textbox ctype="Text" style="" id="tbx_007" label="사번" tabIndex="1" class="" hierarchy="tbx_007" orgid="tbx_007"/>
 						</xf:group>
 						<xf:group class="w2tb_td" style="" tagname="td">
-							<xf:input ctype="Edit" style="width:177px;" id="ibx_empCdDetail" label="사번" tabIndex="1" class="" hierarchy="ibx_empCdDetail" orgid="ibx_empCdDetail"/>
+							<xf:input ctype="Edit" style="width:177px;" id="ibx_empCdDetail" ref="data:dlt_memberBasic.EMP_CD" label="사번" tabIndex="1" class="" hierarchy="ibx_empCdDetail" orgid="ibx_empCdDetail"/>
 						</xf:group>
 						<xf:group class="w2tb_th" style="" tagname="th">
 							<w2:textbox ctype="Text" style="" id="tbx_009" label="성명" tabIndex="1" class="" hierarchy="tbx_009" orgid="tbx_009"/>
 						</xf:group>
 						<xf:group class="w2tb_td" style="" tagname="td">
-							<xf:input ctype="Edit" style="width:177px;" id="ibx_empNmDetail" label="성명" tabIndex="1" class="" hierarchy="ibx_empNmDetail" orgid="ibx_empNmDetail"/>
+							<xf:input ctype="Edit" style="width:177px;" id="ibx_empNmDetail" ref="data:dlt_memberBasic.EMP_NM" label="성명" tabIndex="1" class="" hierarchy="ibx_empNmDetail" orgid="ibx_empNmDetail"/>
 						</xf:group>
 						<xf:group class="w2tb_th" style="" tagname="th">
 							<w2:textbox ctype="Text" style="" id="tbx_011" label="부서명" tabIndex="1" class="" hierarchy="tbx_011" orgid="tbx_011"/>
 						</xf:group>
 						<xf:group class="w2tb_td" style="" tagname="td">
-							<xf:select1 ctype="SelectBox" style="width:71px;" id="sbx_deptNmDetail" label="부서명" tabIndex="1" class="" hierarchy="sbx_deptNmDetail" orgid="sbx_deptNmDetail"/>
+							<xf:select1 ctype="SelectBox" style="width:71px;" id="sbx_deptNmDetail" ref="data:dlt_memberBasic.DEPT_NM" label="부서명" tabIndex="1" class="" hierarchy="sbx_deptNmDetail" orgid="sbx_deptNmDetail"/>
 						</xf:group>
 					</xf:group>
 				</xf:group>
