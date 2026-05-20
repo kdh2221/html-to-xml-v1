@@ -20,6 +20,7 @@ import { applyButtonModifiersInXml } from './button-modifier';
 import { inferDataCollection } from './stage3/data-collection-inferrer';
 import { injectDataCollection } from './stage3/xml-injector';
 import { bindDataCollection } from './stage3/data-binder';
+import { normalizeSchbox } from './stage3/schbox-normalizer';
 import type { LLMClientLike } from './stage3/llm-mock';
 import type { ExtractionResult } from './types';
 
@@ -50,11 +51,15 @@ export async function convertHtmlToWebSquare(
   });
   options.onStage?.('stage2-relative', relativeXml);
 
+  // Stage 2.5: schbox 구조 정규화 (항상 실행 — 구조는 바인딩과 독립)
+  const normalizedXml = normalizeSchbox(relativeXml);
+  options.onStage?.('stage2.5-schbox', normalizedXml);
+
   // Stage 3: LLM Semantic Enricher (skip if --no-llm or no llmClient)
-  let enrichedXml = relativeXml;
+  let enrichedXml = normalizedXml;
   if (!options.noLlm && options.llmClient) {
-    const ir = await inferDataCollection(relativeXml, options.llmClient);
-    enrichedXml = injectDataCollection(relativeXml, ir);
+    const ir = await inferDataCollection(normalizedXml, options.llmClient);
+    enrichedXml = injectDataCollection(normalizedXml, ir);
     enrichedXml = bindDataCollection(enrichedXml, ir);   // Stage 3.5: ref + grid + submission
     options.onStage?.('stage3-enriched', { ir, xml: enrichedXml });
   }
