@@ -16,11 +16,18 @@ import { buildAbsoluteXml } from './absolute-xml-builder';
 import { convertAbsoluteToRelative, RelativeOptions } from './relative-converter';
 import { renameIdToUi01 } from './id-renamer';
 import { applyButtonModifiersInXml } from './button-modifier';
+import { inferDataCollection } from './stage3/data-collection-inferrer';
+import { injectDataCollection } from './stage3/xml-injector';
+import type { LLMClientLike } from './stage3/llm-mock';
 import type { ExtractionResult } from './types';
 
 export interface PipelineOptions extends RelativeOptions {
   /** 디버그용: 중간 단계 결과를 반환받기 위한 콜백 */
   onStage?: (name: string, payload: unknown) => void;
+  /** Stage 3 LLM 클라이언트 (없으면 Stage 3 skip) */
+  llmClient?: LLMClientLike;
+  /** Stage 3를 명시적으로 건너뛰는 escape hatch */
+  noLlm?: boolean;
 }
 
 export async function convertHtmlToWebSquare(
@@ -41,8 +48,16 @@ export async function convertHtmlToWebSquare(
   });
   options.onStage?.('stage2-relative', relativeXml);
 
+  // Stage 3: LLM Semantic Enricher (skip if --no-llm or no llmClient)
+  let enrichedXml = relativeXml;
+  if (!options.noLlm && options.llmClient) {
+    const ir = await inferDataCollection(relativeXml, options.llmClient);
+    enrichedXml = injectDataCollection(relativeXml, ir);
+    options.onStage?.('stage3-enriched', { ir, xml: enrichedXml });
+  }
+
   // Phase 1 룰: ID prefix UI-01 + 버튼 modifier
-  let result = renameIdToUi01(relativeXml);
+  let result = renameIdToUi01(enrichedXml);
   result = applyButtonModifiersInXml(result);
   options.onStage?.('phase1-finalized', result);
 
