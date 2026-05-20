@@ -12,6 +12,7 @@ import * as cheerio from 'cheerio';
 export interface SchboxRegion {
   kind: 'schbox';
   labels: string[];
+  fields: Array<{ label: string; componentId: string }>;
   innerXml: string;
   screenName?: string;
 }
@@ -49,15 +50,30 @@ export function extractRegions(xml: string): Region[] {
     if (!hasClass($el.attr('class'), 'schbox')) return;
 
     const labels: string[] = [];
-    $el.find('[label]').each((_, tb) => {
-      if (tagNameOf(tb) !== 'w2:textbox') return;
-      const lbl = $(tb).attr('label');
-      if (lbl) labels.push(lbl);
+    const fields: Array<{ label: string; componentId: string }> = [];
+    const INPUT_TAGS = ['xf:input', 'xf:select1', 'xf:select', 'xf:textarea', 'w2:inputcalendar', 'w2:autocomplete'];
+
+    // 문서 순서로 descendant 순회: w2:textbox → labels 누적, input → 직전 label 과 페어링
+    $el.find('*').each((_2, node) => {
+      const tag = tagNameOf(node);
+      if (tag === 'w2:textbox') {
+        const lbl = $(node).attr('label');
+        if (lbl) labels.push(lbl);
+        return;
+      }
+      if (INPUT_TAGS.includes(tag)) {
+        const id = $(node).attr('id');
+        if (!id) return;
+        const ownLabel = $(node).attr('label');
+        const label = ownLabel || labels[labels.length - 1] || '';
+        fields.push({ label, componentId: id });
+      }
     });
 
     regions.push({
       kind: 'schbox',
       labels,
+      fields,
       innerXml: $.xml($el),
       screenName,
     });

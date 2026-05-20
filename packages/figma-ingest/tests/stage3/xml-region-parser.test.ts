@@ -42,6 +42,26 @@ describe('extractRegions', () => {
     expect(sch!.labels).toEqual(['사번', '부서']);
   });
 
+  it('schbox fields: label과 componentId 페어링', () => {
+    const xml = `<root>${SCHBOX_XML}</root>`;
+    const regions = extractRegions(xml);
+    const sch = regions.find(r => r.kind === 'schbox');
+    expect(sch).toBeDefined();
+    if (sch?.kind !== 'schbox') throw new Error('not schbox');
+    expect(sch.fields).toEqual([
+      { label: '사번', componentId: 'ibx_empCd' },
+      { label: '부서', componentId: 'sbx_deptCd' },
+    ]);
+  });
+
+  it('schbox labels는 하위호환 유지', () => {
+    const xml = `<root>${SCHBOX_XML}</root>`;
+    const regions = extractRegions(xml);
+    const sch = regions.find(r => r.kind === 'schbox');
+    if (sch?.kind !== 'schbox') throw new Error('not schbox');
+    expect(sch.labels).toEqual(['사번', '부서']);
+  });
+
   it('gvwbox 영역에서 컬럼 정보 추출', () => {
     const xml = `<root>${GVWBOX_XML}</root>`;
     const regions = extractRegions(xml);
