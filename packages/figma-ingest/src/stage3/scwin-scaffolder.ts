@@ -103,3 +103,23 @@ export function injectButtonOnclick(xml: string, buttonId: string): string {
     return `${head} ev:onclick="scwin.${buttonId}_onclick"${tail}`;
   });
 }
+
+/**
+ * 최종 XML에 조회 흐름 scwin 핸들러를 스캐폴딩.
+ * sbm_search·바인딩 grid 둘 다 없으면 no-op(빈 onpageload 유지).
+ */
+export function scaffoldScwinHandlers(xml: string): string {
+  const hasSubmission = detectSubmission(xml);
+  const boundGrid = detectBoundGrid(xml);
+  if (!hasSubmission && !boundGrid) return xml; // no-op (Phase 0+1 회귀)
+
+  const searchBtn = detectSearchButton(xml);
+  const container = detectSearchContainer(xml);
+  const script = buildHandlerScript({ searchBtn, boundGrid, hasSubmission, container });
+
+  let out = replaceOnpageload(xml, script);
+  if (searchBtn && hasSubmission) {
+    out = injectButtonOnclick(out, searchBtn.id);
+  }
+  return out;
+}

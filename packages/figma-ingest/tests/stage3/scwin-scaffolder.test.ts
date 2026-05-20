@@ -143,3 +143,59 @@ describe('injectButtonOnclick', () => {
     expect((out.match(/ev:onclick=/g) || []).length).toBe(1);
   });
 });
+
+import { scaffoldScwinHandlers } from '../../src/stage3/scwin-scaffolder';
+
+const FULL = `<root>
+  <xf:submission id="sbm_search" ev:submitdone="scwin.sbm_search_submitdone"/>
+  <script type="text/javascript" lazy="false"><![CDATA[
+scwin.onpageload = function() {
+};
+]]></script>
+  <xf:group class="schbox_inner" id="tbl_search"><xf:input id="ibx_a"/></xf:group>
+  <xf:group class="btn_schbox"><xf:trigger id="btn_006" type="button" class="btn_cm sch"><xf:label><![CDATA[조회]]></xf:label></xf:trigger></xf:group>
+  <w2:gridView id="grd_007" dataList="data:dlt_list"></w2:gridView>
+</root>`;
+
+describe('scaffoldScwinHandlers (orchestrator)', () => {
+  it('simple-form형: onpageload 3종 + 버튼 onclick + submitdone', () => {
+    const out = scaffoldScwinHandlers(FULL);
+    expect(out).toContain('$c.win.setEnterKeyEvent(tbl_search, scwin.btn_006_onclick);');
+    expect(out).toContain('$c.util.setGridViewDelCheckBox([grd_007]);');
+    expect(out).toContain('$c.data.setChangeCheckedDc([dlt_list]);');
+    expect(out).toContain('scwin.btn_006_onclick = function() {');
+    expect(out).toContain('$c.sbm.execute(sbm_search);');
+    expect(out).toContain('scwin.sbm_search_submitdone = function(e) {');
+    expect(out).toContain('ev:onclick="scwin.btn_006_onclick"');
+    expect(out).not.toMatch(/scwin\.onpageload = function\(\) \{\s*\};/);
+  });
+
+  it('master-detail형(sbm 없음): grid 2종만, onclick·setEnterKeyEvent·submitdone 없음, 버튼 onclick 미부여', () => {
+    const md = `<root>
+  <script type="text/javascript" lazy="false"><![CDATA[
+scwin.onpageload = function() {
+};
+]]></script>
+  <xf:group class="schbox_inner" id="tbl_search"><xf:input id="ibx_a"/></xf:group>
+  <xf:group class="btn_schbox"><xf:trigger id="btn_004" type="button" class="btn_cm sch"><xf:label><![CDATA[조회]]></xf:label></xf:trigger></xf:group>
+  <w2:gridView id="grd_005" dataList="data:dlt_memberBasic"></w2:gridView>
+</root>`;
+    const out = scaffoldScwinHandlers(md);
+    expect(out).toContain('$c.util.setGridViewDelCheckBox([grd_005]);');
+    expect(out).toContain('$c.data.setChangeCheckedDc([dlt_memberBasic]);');
+    expect(out).not.toContain('setEnterKeyEvent');
+    expect(out).not.toContain('$c.sbm.execute');
+    expect(out).not.toContain('submitdone');
+    expect(out).not.toContain('ev:onclick');
+  });
+
+  it('no-op: sbm·grid 둘 다 없으면 원본 그대로', () => {
+    const xml = `<root>
+  <script><![CDATA[
+scwin.onpageload = function() {
+};
+]]></script>
+</root>`;
+    expect(scaffoldScwinHandlers(xml)).toBe(xml);
+  });
+});
