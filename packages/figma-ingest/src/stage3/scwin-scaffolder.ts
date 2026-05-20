@@ -107,6 +107,9 @@ export function injectButtonOnclick(xml: string, buttonId: string): string {
 /**
  * 최종 XML에 조회 흐름 scwin 핸들러를 스캐폴딩.
  * sbm_search·바인딩 grid 둘 다 없으면 no-op(빈 onpageload 유지).
+ *
+ * no-op 판정은 submission/grid만 본다. 조회버튼·tbl_search 컨테이너만 있고
+ * 실행 대상(sbm)·결과 대상(grid)이 없으면 생성할 핸들러가 없으므로 스캐폴딩 안 함.
  */
 export function scaffoldScwinHandlers(xml: string): string {
   const hasSubmission = detectSubmission(xml);
