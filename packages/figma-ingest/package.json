@@ -12,7 +12,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:golden:regenerate": "tsc && tsx scripts/regenerate-goldens.ts",
-    "test:llm:live": "LIVE_LLM=true vitest run pipeline-stage3",
+    "test:llm:live": "cross-env LIVE_LLM=true vitest run live-llm",
     "cli": "node dist/cli.js"
   },
   "dependencies": {
@@ -24,6 +24,7 @@
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
+    "cross-env": "^7.0.3",
     "tsx": "^4.7.0",
     "typescript": "^5.4.0",
     "vitest": "^1.6.0"
