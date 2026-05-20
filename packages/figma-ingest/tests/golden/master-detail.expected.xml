@@ -46,19 +46,19 @@ scwin.onpageload = function() {
 				</xf:group>
 			</xf:group>
 			<xf:group id="" class="gvwbox">
-				<w2:gridView ctype="IBSheet" class="gvw" hierarchy="grd_005" id="grd_005" orgid="grd_005" style="width:100%; height:150px;" tabIndex="1">
+				<w2:gridView ctype="IBSheet" class="gvw" hierarchy="grd_005" id="grd_005" orgid="grd_005" style="width:100%; height:150px;" tabIndex="1" dataList="data:dlt_memberBasic">
 					<w2:header id="header1">
 						<w2:row>
-							<w2:column id="column1" inputType="text" value="사번" width="60"></w2:column>
-							<w2:column id="column2" inputType="text" value="성명" width="60"></w2:column>
-							<w2:column id="column3" inputType="text" value="부서명" width="60"></w2:column>
+							<w2:column id="EMP_CD" inputType="text" value="사번" width="60"></w2:column>
+							<w2:column id="EMP_NM" inputType="text" value="성명" width="60"></w2:column>
+							<w2:column id="DEPT_NM" inputType="text" value="부서명" width="60"></w2:column>
 						</w2:row>
 					</w2:header>
 					<w2:gBody id="gBody1">
 						<w2:row>
-							<w2:column id="col_1" inputType="text" width="60"></w2:column>
-							<w2:column id="col_2" inputType="text" width="60"></w2:column>
-							<w2:column id="col_3" inputType="text" width="60"></w2:column>
+							<w2:column id="EMP_CD" inputType="text" width="60"></w2:column>
+							<w2:column id="EMP_NM" inputType="text" width="60"></w2:column>
+							<w2:column id="DEPT_NM" inputType="text" width="60"></w2:column>
 						</w2:row>
 					</w2:gBody>
 				</w2:gridView>
