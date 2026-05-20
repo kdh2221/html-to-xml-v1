@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { findGroupEnd, findSearchGroupBlock, hasSearchButton } from '../../src/stage3/schbox-normalizer';
+import { extractSearchButtons, findGroupEnd, findSearchGroupBlock, hasSearchButton } from '../../src/stage3/schbox-normalizer';
 
 const SEARCH_XML = `<body>
   <xf:group class="tblbox" id="grp_search_001" meta_snippetName="x">
@@ -68,5 +68,31 @@ describe('findSearchGroupBlock', () => {
   it('grp_search지만 검색버튼 없으면 null', () => {
     const xml = `<body><xf:group class="tblbox" id="grp_search_001"><xf:trigger><xf:label><![CDATA[저장]]></xf:label></xf:trigger></xf:group></body>`;
     expect(findSearchGroupBlock(xml)).toBeNull();
+  });
+});
+
+describe('extractSearchButtons', () => {
+  it('조회 버튼을 추출하고 폼에서 제거', () => {
+    const block = `<xf:group class="w2tb_td" tagname="td"><xf:select1 id="sbx_deptCd"/><xf:trigger id="btn_006"><xf:label><![CDATA[조회]]></xf:label></xf:trigger></xf:group>`;
+    const { buttons, rest } = extractSearchButtons(block);
+    expect(buttons.length).toBe(1);
+    expect(buttons[0]).toContain('btn_006');
+    expect(buttons[0]).toContain('조회');
+    expect(rest).not.toContain('btn_006');
+    expect(rest).toContain('sbx_deptCd');  // 폼 요소는 남음
+  });
+
+  it('검색 아닌 trigger는 보존', () => {
+    const block = `<xf:trigger id="btn_save"><xf:label><![CDATA[저장]]></xf:label></xf:trigger>`;
+    const { buttons, rest } = extractSearchButtons(block);
+    expect(buttons.length).toBe(0);
+    expect(rest).toContain('btn_save');
+  });
+
+  it('조회+초기화 둘 다 추출', () => {
+    const block = `<xf:trigger id="b1"><xf:label><![CDATA[조회]]></xf:label></xf:trigger><xf:trigger id="b2"><xf:label><![CDATA[초기화]]></xf:label></xf:trigger>`;
+    const { buttons, rest } = extractSearchButtons(block);
+    expect(buttons.length).toBe(2);
+    expect(rest.replace(/\s/g, '')).toBe('');
   });
 });

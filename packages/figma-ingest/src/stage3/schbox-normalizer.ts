@@ -62,3 +62,18 @@ export function findSearchGroupBlock(xml: string, fromIndex = 0): SearchGroup | 
   }
   return null;
 }
+
+/**
+ * 블록에서 검색버튼(조회/검색/초기화 trigger)을 추출하고, 폼에서 제거한 나머지를 반환.
+ */
+export function extractSearchButtons(block: string): { buttons: string[]; rest: string } {
+  const buttons: string[] = [];
+  const rest = block.replace(/<xf:trigger\b[\s\S]*?<\/xf:trigger>/g, (t) => {
+    if (SEARCH_LABELS.test(t)) {
+      buttons.push(t.trim());
+      return '';
+    }
+    return t;
+  });
+  return { buttons, rest };
+}
