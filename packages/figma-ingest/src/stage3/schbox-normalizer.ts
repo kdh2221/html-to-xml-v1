@@ -90,13 +90,17 @@ export function transformSearchBlock(block: string): string {
   if (buttons.length === 0) return block;
 
   // 1. 외곽 여는 태그: tblbox→schbox, grp_search id 제거
-  let out = rest.replace(/^(<xf:group\b)([^>]*?)(>)/, (full, open, attrs, close) => {
-    let a = attrs;
-    a = a.replace(/class="([^"]*)"/, (_cm: string, cls: string) => {
-      const classes = cls.split(/\s+/).map((c) => (c === 'tblbox' ? 'schbox' : c)).filter(Boolean);
-      if (!classes.includes('schbox')) classes.push('schbox');
-      return `class="${classes.join(' ')}"`;
-    });
+  let out = rest.replace(/^(<xf:group\b)([^>]*?)(>)/, (_full, open, attrs, close) => {
+    let a = attrs as string;
+    if (/class="/.test(a)) {
+      a = a.replace(/class="([^"]*)"/, (_cm: string, cls: string) => {
+        const classes = cls.split(/\s+/).map((c) => (c === 'tblbox' ? 'schbox' : c)).filter(Boolean);
+        if (!classes.includes('schbox')) classes.push('schbox');
+        return `class="${classes.join(' ')}"`;
+      });
+    } else {
+      a = `${a} class="schbox"`;
+    }
     a = a.replace(/\s*\bid="grp_search[^"]*"/, '');
     return `${open}${a}${close}`;
   });

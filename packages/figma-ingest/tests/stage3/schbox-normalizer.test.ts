@@ -120,9 +120,13 @@ describe('transformSearchBlock', () => {
     expect(out).toContain('<xf:group class="btn_schbox">');
     expect(out).toContain('btn_006');
     expect(out).toContain('<![CDATA[조회]]>');
-    const innerEnd = out.indexOf('</xf:group>', out.indexOf('schbox_inner'));
-    const btnPos = out.indexOf('btn_006');
-    expect(btnPos).toBeGreaterThan(out.indexOf('btn_schbox'));
+    // 버튼은 btn_schbox 안에 있고, btn_schbox는 schbox_inner(폼) 뒤에 온다
+    expect(out.indexOf('btn_schbox')).toBeGreaterThan(out.indexOf('schbox_inner'));
+    expect(out.indexOf('btn_006')).toBeGreaterThan(out.indexOf('btn_schbox'));
+    // 폼(td) 영역엔 검색버튼이 남아있지 않다
+    const tdStart = out.indexOf('w2tb_td');
+    const tdEnd = out.indexOf('</xf:group>', out.indexOf('sbx_deptCd'));
+    expect(out.slice(tdStart, tdEnd)).not.toContain('btn_006');
     expect(out).toMatch(/w2tb_td[\s\S]*sbx_deptCd/);
   });
 
