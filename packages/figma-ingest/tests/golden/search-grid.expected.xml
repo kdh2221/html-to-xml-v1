@@ -4,8 +4,21 @@
 		<w2:type xmlns:w2="http://www.inswave.com/websquare">COMPONENT</w2:type>
 		<w2:buildDate xmlns:w2="http://www.inswave.com/websquare"/>
 		<xf:model xmlns:xf="http://www.w3.org/2002/xforms">
-			<w2:dataCollection xmlns:w2="http://www.inswave.com/websquare">
-			</w2:dataCollection>
+			<w2:dataCollection baseNode="map">
+			<w2:dataMap id="dma_search" baseNode="map">
+				<w2:keyInfo>
+					<w2:key id="ORDER_NO" name="주문번호" dataType="text"/>
+					<w2:key id="ORDER_DATE" name="주문일" dataType="date"/>
+				</w2:keyInfo>
+			</w2:dataMap>
+			<w2:dataList id="dlt_orderList" baseNode="list" repeatNode="map" saveRemovedData="true">
+				<w2:columnInfo>
+					<w2:column id="ORDER_NO" name="주문번호" dataType="text"/>
+					<w2:column id="ORDER_DATE" name="주문일" dataType="date"/>
+					<w2:column id="AMOUNT" name="금액" dataType="number"/>
+				</w2:columnInfo>
+			</w2:dataList>
+		</w2:dataCollection>
 		</xf:model>
 		<script type="text/javascript" lazy="false"><![CDATA[
 scwin.onpageload = function() {

@@ -11,7 +11,8 @@
     "build": "tsc",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:golden:regenerate": "node dist/cli.js tests/fixtures/simple-form.html tests/golden/simple-form.expected.xml && node dist/cli.js tests/fixtures/search-grid.html tests/golden/search-grid.expected.xml && node dist/cli.js tests/fixtures/master-detail.html tests/golden/master-detail.expected.xml",
+    "test:golden:regenerate": "tsx scripts/regenerate-goldens.ts",
+    "test:llm:live": "LIVE_LLM=true vitest run pipeline-stage3",
     "cli": "node dist/cli.js"
   },
   "dependencies": {
@@ -23,6 +24,7 @@
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
+    "tsx": "^4.7.0",
     "typescript": "^5.4.0",
     "vitest": "^1.6.0"
   }

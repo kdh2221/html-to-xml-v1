@@ -4,8 +4,15 @@
 		<w2:type xmlns:w2="http://www.inswave.com/websquare">COMPONENT</w2:type>
 		<w2:buildDate xmlns:w2="http://www.inswave.com/websquare"/>
 		<xf:model xmlns:xf="http://www.w3.org/2002/xforms">
-			<w2:dataCollection xmlns:w2="http://www.inswave.com/websquare">
-			</w2:dataCollection>
+			<w2:dataCollection baseNode="map">
+			<w2:dataList id="dlt_memberBasic" baseNode="list" repeatNode="map" saveRemovedData="true">
+				<w2:columnInfo>
+					<w2:column id="EMP_CD" name="사번" dataType="text"/>
+					<w2:column id="EMP_NM" name="성명" dataType="text"/>
+					<w2:column id="DEPT_NM" name="부서명" dataType="text"/>
+				</w2:columnInfo>
+			</w2:dataList>
+		</w2:dataCollection>
 		</xf:model>
 		<script type="text/javascript" lazy="false"><![CDATA[
 scwin.onpageload = function() {
