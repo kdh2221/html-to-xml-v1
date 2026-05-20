@@ -4,10 +4,10 @@
  * Stage 0: HTML → 컴포넌트 + 좌표 (dom-extractor)
  * Stage 1: 컴포넌트 → ABSOLUTE-coord XML (absolute-xml-builder)
  * Stage 2: ABSOLUTE → RELATIVE XML (relative-converter, legacy 호출)
+ * Stage 3: LLM Semantic Enricher (DataCollection 추론) — Phase 2A에서 통합됨
  * Phase 1 룰: ID prefix 변환 (id-renamer) + 버튼 modifier 부여 (button-modifier)
  *
  * Phase 2 이후에 추가될 단계 (현재는 미포함):
- *   - Stage 3 Semantic Enricher (LLM)
  *   - Stage 4 안티패턴 검증
  *   - Stage 5 시각 회귀
  */

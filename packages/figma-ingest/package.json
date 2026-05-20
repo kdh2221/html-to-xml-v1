@@ -11,7 +11,7 @@
     "build": "tsc",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:golden:regenerate": "tsx scripts/regenerate-goldens.ts",
+    "test:golden:regenerate": "tsc && tsx scripts/regenerate-goldens.ts",
     "test:llm:live": "LIVE_LLM=true vitest run pipeline-stage3",
     "cli": "node dist/cli.js"
   },
