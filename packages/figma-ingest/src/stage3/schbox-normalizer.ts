@@ -90,6 +90,9 @@ export function transformSearchBlock(block: string): string {
   if (buttons.length === 0) return block;
 
   // 1. 외곽 여는 태그: tblbox→schbox, grp_search id 제거
+  // 주의: id를 단 외곽 그룹의 class는 fixture에 따라 tblbox(=id가 테이블에) 또는
+  // grpbox_wrap(=id가 래퍼에, 내부 tblbox는 그대로 둠)일 수 있다. tblbox만 schbox로
+  // 치환하고 schbox를 보장하므로, grpbox_wrap 내부 tblbox는 의도적으로 보존된다.
   let out = rest.replace(/^(<xf:group\b)([^>]*?)(>)/, (_full, open, attrs, close) => {
     let a = attrs as string;
     if (/class="/.test(a)) {
@@ -126,6 +129,9 @@ export function transformSearchBlock(block: string): string {
 /**
  * 모든 검색그룹(grp_search + 검색버튼)을 표준 schbox로 정규화.
  * 변환 후 grp_search id가 사라지므로 자연히 다음 그룹으로 진행.
+ *
+ * 전제: 검색그룹은 형제로만 배치된다(중첩 grp_search 없음 — 현재 layout planner가
+ * 형제 그룹만 생성). 중첩될 경우 외곽 변환이 내부 버튼까지 끌어올려 내부 husk가 남는다.
  */
 export function normalizeSchbox(xml: string): string {
   let result = xml;
