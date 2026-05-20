@@ -98,3 +98,48 @@ describe('buildHandlerScript', () => {
     expect(out).toContain('scwin.sbm_search_submitdone');
   });
 });
+
+import { replaceOnpageload, injectButtonOnclick, buildHandlerScript as _bhs } from '../../src/stage3/scwin-scaffolder';
+
+describe('buildHandlerScript empty body', () => {
+  it('grid·container·없고 sbm만: onpageload 빈 본문 + submitdone', () => {
+    const out = _bhs({ searchBtn: null, boundGrid: null, hasSubmission: true, container: null });
+    expect(out).toContain('scwin.onpageload = function() {\n};');
+    expect(out).toContain('scwin.sbm_search_submitdone = function(e) {\n};');
+    expect(out).not.toContain('setEnterKeyEvent');
+    expect(out).not.toContain('setGridViewDelCheckBox');
+  });
+});
+
+describe('replaceOnpageload', () => {
+  it('빈 onpageload를 스크립트로 교체 ($c 보존)', () => {
+    const xml = `<script><![CDATA[\nscwin.onpageload = function() {\n};\n]]></script>`;
+    const script = `scwin.onpageload = function() {\n\t$c.util.setGridViewDelCheckBox([grd_007]);\n};\nscwin.sbm_search_submitdone = function(e) {\n};`;
+    const out = replaceOnpageload(xml, script);
+    expect(out).toContain('$c.util.setGridViewDelCheckBox([grd_007]);');
+    expect(out).toContain('scwin.sbm_search_submitdone = function(e) {');
+    expect(out).toContain('<![CDATA[');
+    expect(out).toContain(']]></script>');
+  });
+
+  it('빈 onpageload 없으면 원본 그대로', () => {
+    const xml = `<script><![CDATA[\nscwin.foo = 1;\n]]></script>`;
+    expect(replaceOnpageload(xml, 'X')).toBe(xml);
+  });
+});
+
+describe('injectButtonOnclick', () => {
+  it('ev:onclick 부여(없을 때)', () => {
+    const xml = `<xf:trigger id="btn_006" class="btn_cm sch"><xf:label><![CDATA[조회]]></xf:label></xf:trigger>`;
+    const out = injectButtonOnclick(xml, 'btn_006');
+    expect(out).toContain('ev:onclick="scwin.btn_006_onclick"');
+    expect(out).toContain('<![CDATA[조회]]>');
+  });
+
+  it('이미 ev:onclick 있으면 보존(중복 부여 안 함)', () => {
+    const xml = `<xf:trigger id="btn_006" class="btn_cm sch" ev:onclick="scwin.existing"><xf:label><![CDATA[조회]]></xf:label></xf:trigger>`;
+    const out = injectButtonOnclick(xml, 'btn_006');
+    expect(out).toBe(xml);
+    expect((out.match(/ev:onclick=/g) || []).length).toBe(1);
+  });
+});

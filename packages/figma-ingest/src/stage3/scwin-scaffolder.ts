@@ -86,3 +86,20 @@ export function buildHandlerScript(d: ScwinDetections): string {
   }
   return blocks.join('\n');
 }
+
+/**
+ * 빈 onpageload(`scwin.onpageload = function() {};`)를 핸들러 스크립트로 교체.
+ * replacement에 $가 있으므로 replacer 함수로 치환($ 특수해석 회피). 매칭 없으면 원본.
+ */
+export function replaceOnpageload(xml: string, handlerScript: string): string {
+  return xml.replace(/scwin\.onpageload = function\(\) \{\s*\};/, () => handlerScript);
+}
+
+/** 버튼 opening 태그에 ev:onclick 부여(이미 있으면 보존). */
+export function injectButtonOnclick(xml: string, buttonId: string): string {
+  const re = new RegExp(`(<xf:trigger\\b[^>]*\\bid="${buttonId}"[^>]*?)(\\s*>)`);
+  return xml.replace(re, (full, head: string, tail: string) => {
+    if (/\bev:onclick=/.test(head)) return full;
+    return `${head} ev:onclick="scwin.${buttonId}_onclick"${tail}`;
+  });
+}
