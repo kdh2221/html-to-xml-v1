@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { extractSearchButtons, findGroupEnd, findSearchGroupBlock, hasSearchButton, transformSearchBlock } from '../../src/stage3/schbox-normalizer';
+import { extractSearchButtons, findGroupEnd, findSearchGroupBlock, hasSearchButton, normalizeSchbox, transformSearchBlock } from '../../src/stage3/schbox-normalizer';
 
 const SEARCH_XML = `<body>
   <xf:group class="tblbox" id="grp_search_001" meta_snippetName="x">
@@ -138,5 +138,34 @@ describe('transformSearchBlock', () => {
   it('검색버튼 없는 블록은 그대로(no-op)', () => {
     const block = `<xf:group class="tblbox" id="grp_search_001"><xf:group class="w2tb tbl"><xf:input id="x"/></xf:group></xf:group>`;
     expect(transformSearchBlock(block)).toBe(block);
+  });
+});
+
+describe('normalizeSchbox (orchestrator)', () => {
+  it('grp_search를 schbox로, 나머지 문서 보존', () => {
+    const out = normalizeSchbox(SEARCH_XML);
+    expect(out).toContain('class="schbox"');
+    expect(out).toContain('<xf:group class="schbox_inner" id="tbl_search">');
+    expect(out).toContain('<xf:group class="btn_schbox">');
+    expect(out).not.toContain('grp_search_001');
+    expect(out).not.toContain('tblbox');
+    expect(out).toContain('<xf:group class="gvwbox"><w2:gridView id="grd_007"></w2:gridView></xf:group>');
+  });
+
+  it('검색그룹 없으면 원본 그대로', () => {
+    const xml = `<body><xf:group class="gvwbox"><w2:gridView id="g"></w2:gridView></xf:group></body>`;
+    expect(normalizeSchbox(xml)).toBe(xml);
+  });
+
+  it('grp_search지만 검색버튼 없으면 변환 안 함', () => {
+    const xml = `<body><xf:group class="tblbox" id="grp_search_001"><xf:group class="w2tb tbl"><xf:input id="x"/></xf:group></xf:group></body>`;
+    expect(normalizeSchbox(xml)).toBe(xml);
+  });
+
+  it('다중 grp_search 모두 변환', () => {
+    const two = `<body>${SEARCH_XML.slice(6, SEARCH_XML.lastIndexOf('</body>'))}${SEARCH_XML.slice(6, SEARCH_XML.lastIndexOf('</body>'))}</body>`;
+    const out = normalizeSchbox(two);
+    expect((out.match(/class="schbox_inner"/g) || []).length).toBe(2);
+    expect(out).not.toContain('grp_search');
   });
 });

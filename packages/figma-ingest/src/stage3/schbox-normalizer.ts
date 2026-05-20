@@ -122,3 +122,24 @@ export function transformSearchBlock(block: string): string {
 
   return out;
 }
+
+/**
+ * 모든 검색그룹(grp_search + 검색버튼)을 표준 schbox로 정규화.
+ * 변환 후 grp_search id가 사라지므로 자연히 다음 그룹으로 진행.
+ */
+export function normalizeSchbox(xml: string): string {
+  let result = xml;
+  let searchFrom = 0;
+  for (;;) {
+    const sg = findSearchGroupBlock(result, searchFrom);
+    if (!sg) break;
+    const transformed = transformSearchBlock(sg.block);
+    if (transformed === sg.block) {
+      searchFrom = sg.end; // 변경 없음 — 무한루프 방지
+      continue;
+    }
+    result = result.slice(0, sg.start) + transformed + result.slice(sg.end);
+    searchFrom = sg.start + transformed.length;
+  }
+  return result;
+}
