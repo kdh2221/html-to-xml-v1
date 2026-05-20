@@ -5,6 +5,7 @@
  * Stage 1: 컴포넌트 → ABSOLUTE-coord XML (absolute-xml-builder)
  * Stage 2: ABSOLUTE → RELATIVE XML (relative-converter, legacy 호출)
  * Stage 3: LLM Semantic Enricher (DataCollection 추론) — Phase 2A에서 통합됨
+ * Stage 3.5: DataCollection 바인딩 (ref 부착 + grid 정렬 + submission 주입) — Phase 2B
  * Phase 1 룰: ID prefix 변환 (id-renamer) + 버튼 modifier 부여 (button-modifier)
  *
  * Phase 2 이후에 추가될 단계 (현재는 미포함):
@@ -18,6 +19,7 @@ import { renameIdToUi01 } from './id-renamer';
 import { applyButtonModifiersInXml } from './button-modifier';
 import { inferDataCollection } from './stage3/data-collection-inferrer';
 import { injectDataCollection } from './stage3/xml-injector';
+import { bindDataCollection } from './stage3/data-binder';
 import type { LLMClientLike } from './stage3/llm-mock';
 import type { ExtractionResult } from './types';
 
@@ -53,6 +55,7 @@ export async function convertHtmlToWebSquare(
   if (!options.noLlm && options.llmClient) {
     const ir = await inferDataCollection(relativeXml, options.llmClient);
     enrichedXml = injectDataCollection(relativeXml, ir);
+    enrichedXml = bindDataCollection(enrichedXml, ir);   // Stage 3.5: ref + grid + submission
     options.onStage?.('stage3-enriched', { ir, xml: enrichedXml });
   }
 
