@@ -6,14 +6,18 @@ const regions: Region[] = [
   {
     kind: 'schbox',
     labels: ['사번', '부서'],
+    fields: [
+      { label: '사번', componentId: 'edt_empCd' },
+      { label: '부서', componentId: 'sel_deptCd' },
+    ],
     innerXml: '<xf:group class="schbox">...</xf:group>',
     screenName: '사원 조회',
   },
   {
     kind: 'gvwbox',
     columns: [
-      { label: '사번', bodyId: 'EMP_CD' },
-      { label: '성명', bodyId: 'EMP_NM' },
+      { label: '사번', bodyId: 'col_1' },
+      { label: '성명', bodyId: 'col_2' },
     ],
     innerXml: '<xf:group class="gvwbox">...</xf:group>',
     screenName: '사원 조회',
@@ -39,7 +43,7 @@ describe('buildPrompt', () => {
     const p = buildPrompt(regions);
     expect(p.user).toContain('사번');
     expect(p.user).toContain('부서');
-    expect(p.user).toContain('EMP_CD');
+    expect(p.user).toContain('col_1');
     expect(p.user).toContain('사원 조회');
   });
 
@@ -59,5 +63,27 @@ describe('buildPrompt', () => {
     expect(tool.input_schema.required).toContain('dataMaps');
     expect(tool.input_schema.required).toContain('dataLists');
     expect(tool.input_schema.required).toContain('confidence');
+  });
+
+  it('user prompt에 컴포넌트 id 노출 (binding 힌트용)', () => {
+    const p = buildPrompt(regions);
+    expect(p.user).toContain('edt_empCd');
+    expect(p.user).toContain('sel_deptCd');
+    expect(p.user).toContain('col_1');
+  });
+
+  it('system prompt가 binding 힌트 반환을 지시', () => {
+    const p = buildPrompt(regions);
+    const sys = p.system.map(b => b.text).join('\n');
+    expect(sys).toContain('boundComponentId');
+    expect(sys).toContain('sourceBodyId');
+  });
+
+  it('tool schema에 boundComponentId / sourceBodyId 속성', () => {
+    const tool = submitDataCollectionTool;
+    const keyProps = (tool.input_schema.properties.dataMaps as any).items.properties.keys.items.properties;
+    const colProps = (tool.input_schema.properties.dataLists as any).items.properties.columns.items.properties;
+    expect(keyProps.boundComponentId).toBeDefined();
+    expect(colProps.sourceBodyId).toBeDefined();
   });
 });
