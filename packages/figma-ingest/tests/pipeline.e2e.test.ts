@@ -97,6 +97,23 @@ describe('pipeline.convertHtmlToWebSquare with Stage 3 (Mock LLM)', () => {
     expect(xml).toContain('<w2:dataList id="dlt_memberBasic"');
   }, 60000);
 
+  it('simple-form: ref 바인딩 + grid dataList + submission (Phase 2B)', async () => {
+    const html = fs.readFileSync(path.join(FIX_DIR, 'simple-form.html'), 'utf-8');
+    const xml = await convertHtmlToWebSquare(html, { llmClient: makeMock('simple-form') });
+    expect(xml).toMatch(/<xf:input\b[^>]*\bid="ibx_empCd"[^>]*ref="data:dma_search\.EMP_CD"/);
+    expect(xml).toMatch(/<xf:select1\b[^>]*\bid="sbx_deptCd"[^>]*ref="data:dma_search\.DEPT_CD"/);
+    expect(xml).toMatch(/<w2:gridView[^>]*dataList="data:dlt_list"/);
+    expect(xml).toContain('<xf:submission id="sbm_search"');
+    expect(xml).not.toContain('id="col_1"');
+  }, 60000);
+
+  it('master-detail: grid 바인딩 O, submission 생략 (DataMap 없음)', async () => {
+    const html = fs.readFileSync(path.join(FIX_DIR, 'master-detail.html'), 'utf-8');
+    const xml = await convertHtmlToWebSquare(html, { llmClient: makeMock('master-detail') });
+    expect(xml).toMatch(/<w2:gridView[^>]*dataList="data:dlt_memberBasic"/);
+    expect(xml).not.toContain('<xf:submission');
+  }, 60000);
+
   it('noLlm: true → Phase 0+1 동작 (DataCollection 비어있음)', async () => {
     const html = fs.readFileSync(path.join(FIX_DIR, 'simple-form.html'), 'utf-8');
     const xml = await convertHtmlToWebSquare(html, { noLlm: true });

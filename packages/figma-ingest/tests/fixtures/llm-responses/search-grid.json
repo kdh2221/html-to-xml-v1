@@ -3,8 +3,8 @@
     "id": "dma_search",
     "name": "주문조회 조건",
     "keys": [
-      { "id": "ORDER_NO", "name": "주문번호", "dataType": "text" },
-      { "id": "ORDER_DATE", "name": "주문일", "dataType": "date" }
+      { "id": "ORDER_NO", "name": "주문번호", "dataType": "text", "boundComponentId": "edt_orderNo" },
+      { "id": "ORDER_DATE", "name": "주문일", "dataType": "date", "boundComponentId": "cal_orderDate" }
     ]
   }],
   "dataLists": [{
@@ -12,11 +12,11 @@
     "name": "주문목록",
     "saveRemovedData": true,
     "columns": [
-      { "id": "ORDER_NO", "name": "주문번호", "dataType": "text" },
-      { "id": "ORDER_DATE", "name": "주문일", "dataType": "date" },
-      { "id": "AMOUNT", "name": "금액", "dataType": "number" }
+      { "id": "ORDER_NO", "name": "주문번호", "dataType": "text", "sourceBodyId": "col_1" },
+      { "id": "ORDER_DATE", "name": "주문일", "dataType": "date", "sourceBodyId": "col_2" },
+      { "id": "AMOUNT", "name": "금액", "dataType": "number", "sourceBodyId": "col_3" }
     ]
   }],
   "confidence": 0.92,
-  "notes": "주문조회 화면: ORDER_NO + ORDER_DATE schbox, 3컬럼 그리드"
+  "notes": "주문조회 화면: ORDER_NO + ORDER_DATE schbox, 3컬럼 그리드 (binding 힌트 포함)"
 }
