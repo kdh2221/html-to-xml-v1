@@ -10,6 +10,8 @@
  */
 import * as cheerio from 'cheerio';
 import { hasSearchButton } from './schbox-normalizer';
+import { addRefToComponent } from './ref-binder';
+import type { DataCollectionIR, DataListColumnIR } from '../types';
 
 export interface DetailInput { id: string; label: string; }
 
@@ -55,5 +57,31 @@ export function detectDetailInputs(xml: string): DetailInput[] {
       }
     });
   });
+  return result;
+}
+
+/** DataList 컬럼 중 name === label인 컬럼 id. 없으면 null. */
+export function matchColumn(label: string, columns: DataListColumnIR[]): string | null {
+  const col = columns.find(c => c.name === label);
+  return col ? col.id : null;
+}
+
+/**
+ * 상세 입력을 (IR의 첫) DataList 컬럼에 ref 바인딩.
+ * DataList 없거나 상세 입력 없으면 no-op. 라벨 불일치 입력은 생략.
+ */
+export function bindDetailTables(xml: string, ir: DataCollectionIR): string {
+  const dlt = ir.dataLists[0];
+  if (!dlt) return xml;
+  const inputs = detectDetailInputs(xml);
+  if (inputs.length === 0) return xml;
+
+  let result = xml;
+  for (const inp of inputs) {
+    const colId = matchColumn(inp.label, dlt.columns);
+    if (colId) {
+      result = addRefToComponent(result, inp.id, `data:${dlt.id}.${colId}`);
+    }
+  }
   return result;
 }

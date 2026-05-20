@@ -19,7 +19,7 @@ function escapeRegex(s: string): string {
 }
 
 /** 컴포넌트 여는 태그를 찾아 ref가 없으면 id 속성 뒤에 삽입. */
-function addRefToComponent(xml: string, componentId: string, refValue: string): string {
+export function addRefToComponent(xml: string, componentId: string, refValue: string): string {
   const re = new RegExp(
     `(<${INPUT_TAGS}\\b[^>]*?\\bid="${escapeRegex(componentId)}")([^>]*?)(\\/?>)`,
   );
