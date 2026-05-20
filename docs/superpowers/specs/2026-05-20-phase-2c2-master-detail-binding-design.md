@@ -49,17 +49,29 @@ xml = bindDetailTables(xml, ir);  // ★ 2C-2 신규
 
 ## 4. 탐지 — 어떤 테이블이 "상세"인가
 
-상세 테이블 = **schbox/schbox_inner(tbl_search)가 아닌 `tblbox` 편집테이블**이 input/select/calendar를 포함.
+상세 테이블 = **감싸는 영역에 조회 버튼이 없는 입력 테이블**(input/select1/inputCalendar 포함).
 
-근거:
-- 2C-0가 검색폼만 schbox로 정규화 → 상세 편집테이블(`<xf:group class="tblbox">`, 5_02)은 그대로 `tblbox`로 남음 → 구분 가능.
-- 검색 입력(`tbl_search`/schbox 안)은 **제외** → 2B의 dma_search 바인딩과 충돌 없음.
+### 4-1. 판정 원칙 — class 리터럴이 아니라 "조회버튼 존재"로 구분
 
-**바인딩 대상 = IR의 DataList**. 운영 게이트는 "IR에 DataList가 존재하는가"이다(이 화면들에선 DataList ⟺ grid 존재). IR에 DataList가 없으면 바인딩 대상이 없으므로 no-op. 2C-2는 IR의 (단일) 첫 DataList를 대상으로 한다 — 다중 grid/DataList는 향후.
+검색영역(schbox)과 입출력테이블(tblbox)을 가르는 본질 신호는 **조회/검색/초기화 버튼의 존재**다:
+- 조회버튼 **있는** 영역 = 검색영역 → 2B가 dma_search에 바인딩 → detail-binder **제외**
+- 조회버튼 **없는** 입력 테이블 = 입출력(상세) 테이블 → DataList에 바인딩 **대상**
+
+이는 2C-0가 schbox 정규화 시 이미 적용하는 기준과 동일하다(2C-0는 `grp_search` id + 조회버튼 둘 다 있을 때만 schbox 생성). 따라서 정상 파이프라인에선 `schbox` ⟺ "조회버튼 있음"이 보장된다. 그럼에도 class가 아닌 **조회버튼 유무**로 판정하는 이유: `class="schbox"`인데 조회버튼이 없는 영역(2C-0 엣지케이스/타 입력 소스)이 생기면, class 기반 제외는 그것을 상세에서 잘못 누락시킨다. 의미 기반 판정은 그런 영역을 자연히 상세(tblbox)로 해석한다.
+
+### 4-2. 타이밍·영역 단위 주의
+
+- **타이밍**: 2C-2는 Stage 3.5(Phase 1 button-modifier *이전*) → 버튼에 `btn_cm sch` 클래스가 아직 없다. 따라서 조회버튼은 **라벨(조회/검색/초기화)**로 탐지한다(`btn_cm sch`는 동일 신호의 최종-XML 형태; 2C-0 `hasSearchButton`과 동일 기준).
+- **영역 단위**: 2C-0가 조회버튼을 폼(`schbox_inner#tbl_search`)에서 떼어 **형제** `btn_schbox`로 옮긴다. "테이블 안에 버튼 있나"로 보면 검색 폼조차 버튼이 없어 보여 오분류된다 → 판정은 **감싸는 바깥 영역(schbox/tblbox 그룹) 기준**으로, 형제까지 포함해 조회버튼 존재를 본다.
+
+### 4-3. 바인딩 대상 = IR의 DataList
+
+운영 게이트는 "IR에 DataList가 존재하는가". IR에 DataList가 없으면 대상 없음 → no-op. 2C-2는 IR의 (단일) 첫 DataList를 대상으로 한다 — 다중 grid/DataList는 향후.
 
 ```
 detectBoundDataList(ir): { dltId, columns } | null   // IR에 DataList 있으면 첫 번째
-detectDetailInputs(xml): DetailInput[]   // schbox/tbl_search 밖 tblbox 편집테이블의 input/select1/inputCalendar
+hasSearchButtonInRegion(regionXml): boolean          // 영역(형제 포함)에 조회/검색/초기화 라벨 trigger 존재 (2C-0 hasSearchButton 재사용)
+detectDetailInputs(xml): DetailInput[]   // 조회버튼 없는 입력 테이블의 input/select1/inputCalendar
                                           // DetailInput { id, label }
 ```
 
@@ -96,15 +108,18 @@ matchColumn(label, columns): colId | null   // columns 중 name === label인 컬
 | IR DataList 부재 (= 바인딩 대상 없음) | no-op |
 | 상세 입력 라벨이 어느 컬럼명과도 불일치 | 그 입력만 바인딩 생략 |
 | 입력에 이미 ref 있음 | 보존 (멱등) |
-| 검색폼 입력 (tbl_search 안) | 제외 |
+| 검색영역 입력 (조회버튼 보유 영역) | 제외 (조회버튼 없는 입력 테이블만 상세로 바인딩) |
 
 ## 8. 테스트 전략
 
 ### 8-1. 단위 (XML 직접 입력, mock 불필요)
-- `detectDetailInputs`: tblbox 편집테이블의 input/select/calendar 추출, schbox 제외
+- `hasSearchButtonInRegion`: 영역(형제 btn_schbox 포함)에 조회 라벨 trigger 있으면 true
+- `detectDetailInputs`: 조회버튼 **없는** 입력 테이블의 input/select/calendar 추출
+  - 검색영역(schbox + btn_schbox/조회) 제외 (조회버튼 형제 존재)
+  - **조회버튼 없는 schbox는 상세로 포함** (의미 기반 판정 검증 — 핵심 케이스)
 - `matchColumn`: 라벨→컬럼명 매칭 (일치/불일치)
 - `bindDetailTables`: ref 주입 (input + select1 + calendar), 검색폼 입력 제외, 라벨 불일치 생략, 멱등(기존 ref 보존)
-- no-op: DataList 없음 / 상세 테이블 없음 / grid 없음
+- no-op: DataList 없음 / 상세 테이블 없음
 
 ### 8-2. E2E (Mock LLM, 기존 fixture 재사용)
 - master-detail: 상세 3입력이 `dlt_memberBasic`의 EMP_CD/EMP_NM/DEPT_NM에 바인딩. grid·검색 입력 보존
@@ -123,7 +138,7 @@ master-detail 골든만 상세 ref 추가. simple-form/search-grid 골든 불변
 ## 10. 리스크/미해결
 | 리스크 | 완화 |
 |---|---|
-| 상세 테이블을 검색폼/타 테이블과 오인 | schbox/tbl_search 제외 + "바인딩된 grid 존재" 조건. 단일 grid 화면에서 결정적 |
+| 상세 테이블을 검색폼과 오인 | **조회버튼 유무로 의미 판정**(영역 단위, 형제 포함). 검색영역은 조회버튼 보유 → 제외. 조회버튼 없는 schbox도 상세로 올바르게 해석 (class 리터럴 비의존) |
 | 라벨이 컬럼명과 불일치 (예: "사원코드" vs "사번") | 정확 일치만 바인딩, 나머지 생략(graceful). 향후 정규화/LLM 힌트 가능 |
 | 다중 grid/상세 테이블 | 2C-2는 첫 DataList만. 다중은 향후 |
 | 2B ref-binder와 영역 중복 | detail-binder는 schbox 밖만 → 2B는 schbox 안만. 영역 분리로 충돌 없음 |
