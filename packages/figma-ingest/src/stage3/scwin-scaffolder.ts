@@ -51,3 +51,38 @@ export function detectSubmission(xml: string): boolean {
 export function detectSearchContainer(xml: string): string | null {
   return /\bid="tbl_search"/.test(xml) ? 'tbl_search' : null;
 }
+
+export interface ScwinDetections {
+  searchBtn: SearchButton | null;
+  boundGrid: BoundGrid | null;
+  hasSubmission: boolean;
+  container: string | null;
+}
+
+/**
+ * 탐지 결과로 scwin 핸들러 스크립트 본문 조립.
+ *  - onpageload: setEnterKeyEvent(검색버튼+sbm+container 충족 시) + grid EV-01 2종(grid 시)
+ *  - {btn}_onclick: 검색버튼+sbm 충족 시 ($c.sbm.execute)
+ *  - sbm_search_submitdone: sbm 시 (stub)
+ */
+export function buildHandlerScript(d: ScwinDetections): string {
+  const lines: string[] = [];
+  if (d.searchBtn && d.hasSubmission && d.container) {
+    lines.push(`\t$c.win.setEnterKeyEvent(${d.container}, scwin.${d.searchBtn.id}_onclick);`);
+  }
+  if (d.boundGrid) {
+    lines.push(`\t$c.util.setGridViewDelCheckBox([${d.boundGrid.gridId}]);`);
+    lines.push(`\t$c.data.setChangeCheckedDc([${d.boundGrid.dltId}]);`);
+  }
+
+  const body = lines.length ? `\n${lines.join('\n')}\n` : '\n';
+  const blocks: string[] = [`scwin.onpageload = function() {${body}};`];
+
+  if (d.searchBtn && d.hasSubmission) {
+    blocks.push(`scwin.${d.searchBtn.id}_onclick = function() {\n\t$c.sbm.execute(sbm_search);\n};`);
+  }
+  if (d.hasSubmission) {
+    blocks.push(`scwin.sbm_search_submitdone = function(e) {\n};`);
+  }
+  return blocks.join('\n');
+}

@@ -4,6 +4,7 @@ import {
   detectBoundGrid,
   detectSubmission,
   detectSearchContainer,
+  buildHandlerScript,
 } from '../../src/stage3/scwin-scaffolder';
 
 const SIMPLE = `<root>
@@ -52,5 +53,48 @@ describe('detectSearchContainer', () => {
   });
   it('없으면 null', () => {
     expect(detectSearchContainer(`<root><xf:group id="other"/></root>`)).toBeNull();
+  });
+});
+
+describe('buildHandlerScript', () => {
+  it('검색+grid+sbm (simple-form형): onpageload 3종 + onclick + submitdone', () => {
+    const out = buildHandlerScript({
+      searchBtn: { id: 'btn_006' },
+      boundGrid: { gridId: 'grd_007', dltId: 'dlt_list' },
+      hasSubmission: true,
+      container: 'tbl_search',
+    });
+    expect(out).toContain('scwin.onpageload = function() {');
+    expect(out).toContain('\t$c.win.setEnterKeyEvent(tbl_search, scwin.btn_006_onclick);');
+    expect(out).toContain('\t$c.util.setGridViewDelCheckBox([grd_007]);');
+    expect(out).toContain('\t$c.data.setChangeCheckedDc([dlt_list]);');
+    expect(out).toContain('scwin.btn_006_onclick = function() {\n\t$c.sbm.execute(sbm_search);\n};');
+    expect(out).toContain('scwin.sbm_search_submitdone = function(e) {\n};');
+  });
+
+  it('grid만 (master-detail형, sbm 없음): grid 2종, setEnterKeyEvent/onclick/submitdone 없음', () => {
+    const out = buildHandlerScript({
+      searchBtn: { id: 'btn_004' },
+      boundGrid: { gridId: 'grd_005', dltId: 'dlt_memberBasic' },
+      hasSubmission: false,
+      container: 'tbl_search',
+    });
+    expect(out).toContain('\t$c.util.setGridViewDelCheckBox([grd_005]);');
+    expect(out).toContain('\t$c.data.setChangeCheckedDc([dlt_memberBasic]);');
+    expect(out).not.toContain('setEnterKeyEvent');
+    expect(out).not.toContain('_onclick = function');
+    expect(out).not.toContain('submitdone');
+  });
+
+  it('container 없으면 setEnterKeyEvent 생략(grid·onclick·submitdone은 sbm 따라)', () => {
+    const out = buildHandlerScript({
+      searchBtn: { id: 'btn_1' },
+      boundGrid: { gridId: 'grd_1', dltId: 'dlt_1' },
+      hasSubmission: true,
+      container: null,
+    });
+    expect(out).not.toContain('setEnterKeyEvent');
+    expect(out).toContain('scwin.btn_1_onclick = function()');
+    expect(out).toContain('scwin.sbm_search_submitdone');
   });
 });
