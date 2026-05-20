@@ -14,6 +14,7 @@ const dataMapKeySchema = z.object({
   id: z.string().regex(UPPER_SNAKE, 'key.id는 UPPER_SNAKE_CASE여야 함'),
   name: z.string().min(1),
   dataType: dataTypeSchema,
+  boundComponentId: z.string().optional(),
 });
 
 const dataMapSchema = z.object({
@@ -26,6 +27,7 @@ const dataListColumnSchema = z.object({
   id: z.string().regex(COLUMN_ID, 'column.id는 UPPER_SNAKE 또는 "chk"여야 함'),
   name: z.string().min(1),
   dataType: dataTypeSchema,
+  sourceBodyId: z.string().optional(),
 });
 
 const dataListSchema = z.object({

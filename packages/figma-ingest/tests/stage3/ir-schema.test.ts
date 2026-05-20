@@ -75,4 +75,30 @@ describe('dataCollectionSchema (Zod)', () => {
     };
     expect(() => validateDataCollection(invalid)).toThrow();
   });
+
+  it('boundComponentId / sourceBodyId 힌트 허용 (optional)', () => {
+    const valid = {
+      dataMaps: [{
+        id: 'dma_search', name: '검색',
+        keys: [{ id: 'EMP_CD', name: '사번', dataType: 'text', boundComponentId: 'edt_empCd' }],
+      }],
+      dataLists: [{
+        id: 'dlt_list', name: '목록',
+        columns: [{ id: 'EMP_CD', name: '사번', dataType: 'text', sourceBodyId: 'col_1' }],
+      }],
+      confidence: 0.9,
+    };
+    const parsed = validateDataCollection(valid);
+    expect(parsed.dataMaps[0].keys[0].boundComponentId).toBe('edt_empCd');
+    expect(parsed.dataLists[0].columns[0].sourceBodyId).toBe('col_1');
+  });
+
+  it('binding 힌트 없어도 통과 (하위호환)', () => {
+    const valid = {
+      dataMaps: [{ id: 'dma_search', name: 'X', keys: [{ id: 'EMP_CD', name: '사번', dataType: 'text' }] }],
+      dataLists: [],
+      confidence: 0.9,
+    };
+    expect(() => validateDataCollection(valid)).not.toThrow();
+  });
 });

@@ -57,6 +57,7 @@ export interface DataMapKeyIR {
   id: string;         // UPPER_SNAKE, e.g., "EMP_CD"
   name: string;       // 한글 라벨, e.g., "사번"
   dataType: 'text' | 'number' | 'date';
+  boundComponentId?: string;  // Phase 2B — 바인딩될 컴포넌트 id (pre-rename, 예: "edt_empCd")
 }
 
 export interface DataMapIR {
@@ -69,6 +70,7 @@ export interface DataListColumnIR {
   id: string;         // UPPER_SNAKE | 'chk'
   name: string;
   dataType: 'text' | 'number' | 'date';
+  sourceBodyId?: string;      // Phase 2B — 원본 grid body 컬럼 id (예: "col_1")
 }
 
 export interface DataListIR {
