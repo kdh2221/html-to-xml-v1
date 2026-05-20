@@ -1,251 +1,167 @@
-# Figma → WebSquare XML 변환 파이프라인
+# 그림을 웹 화면으로 바꿔주는 자동 번역 공장 🏭
 
-**Figma → AI HTML → WebSquare XML** 자동 변환을 위한 사내 운영 파이프라인.
-인스웨이브 WebSquare 생태계에 직접 컴파일되는 XML을 결정론적 룰 + LLM 의미 추론 하이브리드로 생성한다.
+> **한 줄 설명:** 디자인 그림(Figma)으로 만든 웹페이지를, 회사 프로그램(WebSquare)이 알아들을 수 있는 특별한 형태로 **자동으로 바꿔주는 도구**입니다.
 
-> **현재 상태**: Phase 0+1 완료 — 결정론적 변환 경로 (HTML → 컴파일 가능한 XML) 작동
-> Phase 2~4 (LLM Semantic Enricher, 안티패턴 검증, 시각 회귀)는 후속 작업
+---
 
-| | |
+## 🤔 이게 무슨 도구예요?
+
+회사에서 새로운 화면(예: 은행 송금 화면)을 만들 때 순서가 이렇습니다.
+
+1. 디자이너가 **Figma**라는 그림 프로그램으로 화면을 예쁘게 그립니다.
+2. AI에게 그 그림을 주면, **HTML**(웹페이지를 만드는 보통의 재료)을 뚝딱 만들어 줍니다. — 여기까지는 쉬워요.
+3. 그런데 우리 회사 프로그램인 **WebSquare**는 보통 HTML을 그대로 못 씁니다. **WebSquare 전용 언어(XML)**로 바꿔야만 작동합니다. — 이게 어렵고 손이 많이 가요.
+
+이 도구는 **3번 과정을 사람 대신 자동으로** 해줍니다.
+그림 → (AI) → HTML → **(이 도구)** → WebSquare가 바로 쓰는 화면 ✅
+
+> 비유하자면, 한국어로 쓴 편지를 받아서 **회사 전용 암호 편지로 정확하게 번역해 주는 번역기**예요. 단어만 바꾸는 게 아니라, 회사 규칙(띄어쓰기, 서명 위치 등)까지 전부 맞춰 줍니다.
+
+---
+
+## 🧩 왜 그냥 HTML을 쓰면 안 돼요?
+
+WebSquare는 까다로운 규칙쟁이라서, 화면이 제대로 작동하려면 이런 게 다 갖춰져야 해요:
+
+- **데이터 상자**: 화면에 보이는 글자만으로는 부족하고, "이 칸에 들어온 값을 어디에 담을지" 정해 주는 보이지 않는 상자가 필요해요.
+- **연결선**: 입력칸과 데이터 상자를 선으로 이어 줘야 값이 저장돼요.
+- **버튼 동작**: "조회" 버튼을 눌렀을 때 무슨 일이 일어날지 적어 줘야 해요.
+- **금지 규칙**: 하면 안 되는 실수 목록(15가지)이 있는데, 하나라도 어기면 안 돼요.
+
+사람이 매번 이걸 손으로 맞추면 느리고 실수가 생깁니다. 그래서 자동화했어요.
+
+---
+
+## 🏭 어떻게 작동하나요? (컨베이어 벨트 공장 비유)
+
+그림(HTML)이 공장 입구로 들어오면, 여러 작업대를 차례로 지나면서 조금씩 완성됩니다.
+
+```
+   HTML 그림
+      │
+   [1단계] 화면에 뭐가 있는지 읽기 (버튼, 입력칸, 표의 위치 파악)
+      │
+   [2단계] WebSquare 모양으로 1차 변환 (검색칸/표/제목/버튼 구역 나누기)
+      │
+   [2.5단계] 검색영역을 표준 모양으로 정리 ★2C-0
+      │
+   [3단계] AI가 "데이터 상자"를 똑똑하게 추측해서 채우기 ★2A
+      │
+   [3.5단계] 입력칸과 데이터 상자를 선으로 연결 + 서버로 보낼 택배 만들기 ★2B
+      │        + 자세히보기(상세) 칸 연결 ★2C-2(작업 예정)
+      │
+   [4단계] 이름표(ID) 규칙 맞추기 + 버튼 꾸미기
+      │
+   [5단계] 버튼 동작(조회 누르면 실행) 적어 넣기 ★2C-1
+      │
+   완성된 WebSquare 화면 ✅
+```
+
+★ 표시는 우리가 단계별로 만들어 온 기능들이에요. 아래 "지금까지 만든 것"에서 쉽게 설명할게요.
+
+---
+
+## ✅ 지금까지 만든 것 (쉬운 설명)
+
+| 단계 | 별명 | 무엇을 했나요? (쉽게) | 상태 |
+|---|---|---|---|
+| **기초 공사** | Phase 0+1 | 그림을 읽어서 WebSquare 기본 모양으로 바꾸는 **공장의 뼈대**를 세웠어요. 버튼·입력칸·표를 구분하고 이름표를 붙입니다. | ✅ 완료 |
+| **AI 데이터 추측** | Phase 2A | 화면을 보고 **"이 값들을 어떤 상자에 담아야 할지"를 AI가 똑똑하게 추측**해서 채워 줍니다. (예: 사번·성명·부서) | ✅ 완료 |
+| **선 잇기 + 택배** | Phase 2B | 입력칸과 데이터 상자를 **선으로 연결**하고, 검색 결과를 서버에 요청하는 **택배(제출서)**를 만들어요. 표의 칸도 데이터와 맞춰 줍니다. | ✅ 완료 |
+| **검색칸 정리정돈** | Phase 2C-0 | 검색하는 칸 묶음을 WebSquare **표준 모양(schbox)**으로 깔끔하게 정리했어요. 조회 버튼도 제자리로 옮깁니다. | ✅ 완료 |
+| **버튼에 생명 불어넣기** | Phase 2C-1 | **"조회" 버튼을 누르면 실제로 검색이 되도록** 동작을 적어 넣었어요. 엔터키로도 검색되게 했고요. 이제 화면이 진짜로 움직입니다! | ✅ 완료 |
+| **자세히보기 칸 연결** | Phase 2C-2 | 표에서 한 줄을 고르면 **아래 "자세히 보기" 칸에 그 내용이 자동으로 채워지도록** 연결합니다. | 📝 계획 완료, 곧 구현 |
+
+> **지금 상태**: 자동 검사(테스트) **199개 모두 통과**, 실수 0개. 예시 화면 3개(간단폼·검색표·마스터디테일)로 매번 확인하고 있어요.
+
+---
+
+## 📖 어려운 단어 사전
+
+| 단어 | 쉬운 뜻 |
 |---|---|
-| **테스트** | 74/74 PASS (9개 test 파일) |
-| **검증된 입력** | 3개 HTML 픽스처 (simple-form / search-grid / master-detail) |
-| **검증된 출력** | 3개 골든 XML (회귀 baseline) |
-| **CLI 작동** | `node packages/figma-ingest/dist/cli.js <in.html> <out.xml>` |
+| **Figma(피그마)** | 화면을 그림으로 그리는 디자인 프로그램 |
+| **HTML** | 웹페이지를 만드는 가장 흔한 재료 (보통의 웹 언어) |
+| **WebSquare(웹스퀘어)** | 우리 회사가 만든, 화면을 작동시키는 프로그램. 전용 언어가 필요해요 |
+| **XML** | WebSquare가 알아듣는 특별한 언어 (HTML의 깐깐한 사촌) |
+| **DataMap / DataList (데이터 상자/표)** | 화면 값을 담아 두는 보이지 않는 상자(한 건) / 표(여러 줄) |
+| **ref 바인딩 (선 잇기)** | 입력칸과 데이터 상자를 잇는 선. 이어야 값이 저장돼요 |
+| **Submission (택배/제출서)** | 입력한 내용을 서버에 보내거나 결과를 받아오는 요청서 |
+| **schbox (검색칸 묶음)** | 검색 조건을 입력하는 칸들의 표준 묶음 |
+| **grid (그리드/표)** | 결과를 여러 줄로 보여 주는 표 |
+| **상세영역 (자세히 보기)** | 표에서 고른 한 줄의 자세한 내용을 보여 주는 칸 |
+| **골든(golden) 파일** | "정답지". 도구 출력이 정답지와 똑같은지 매번 비교해서 실수를 잡아요 |
 
 ---
 
-## 배경
+## 🗺️ 앞으로 할 일 (로드맵)
 
-기존 외환송금 정정 같은 워크플로우 화면을 만들 때 Figma 디자인을 AI에 통과시키면 HTML/CSS는 비교적 쉽게 얻을 수 있다. 그러나 WebSquare 생태계는 단순 HTML을 받지 않는다 — XHTML + XForms + 자체 `w2:` 네임스페이스 + DataCollection SSOT + `deepsquare/codeRule/CodeRules.md`의 15개 CRITICAL 안티패턴 0 위반이 요구된다.
-
-이 도구는 그 변환을 자동화한다.
-
-설계 배경과 시장 컨텍스트는 [`docs/superpowers/specs/2026-05-13-html-to-websquare-design.md`](docs/superpowers/specs/2026-05-13-html-to-websquare-design.md) 참고.
-
----
-
-## 파이프라인 아키텍처
-
-```
-HTML
- │
- ▼
-Stage 0  Puppeteer DOM 추출 (실좌표)              [구현 완료]
- │
- ▼
-Stage 1  ABSOLUTE-coord WebSquare XML             [구현 완료]
- │
- ▼
-Stage 2  RELATIVE 섹션 분류 (legacy SampleConverter [구현 완료, KB 도구 흡수]
- │      → schbox/gvwbox/titbox/btnbox/tblbox)
- ▼
-Phase 1 룰  ID prefix UI-01 + 버튼 modifier        [구현 완료]
- │          (id-renamer + button-modifier)
- ▼
-Stage 3  LLM Semantic Enricher                    [Phase 2 — 미구현]
- │      DataMap/DataList/Submission 추론
- │      ref="data:..." 바인딩, scwin handler
- ▼
-Stage 4  deepsquare 안티패턴 정적 검증            [Phase 3 — 미구현]
- │      15개 CRITICAL 룰 + 자동 수정
- ▼
-Stage 5  시각 회귀 (Puppeteer 보존율)             [Phase 4 — 미구현]
- ▼
-최종 WebSquare XML + 리포트
-```
+| 순서 | 할 일 | 상태 |
+|---|---|---|
+| 2C-2 | 자세히보기 칸 연결 | 📝 계획 완료 |
+| 2C-3 | "저장" 버튼 동작 + 입력 검사(필수값 확인) | ⏳ 다음 |
+| 3 | 금지 규칙 15가지 자동 검사 | ⏳ 예정 |
+| 4 | 원래 그림과 결과 화면이 똑같이 보이는지 비교 | ⏳ 예정 |
 
 ---
 
-## Quick Start
+<details>
+<summary>👩‍💻 <b>개발자용 안내</b> (클릭해서 펼치기 — 명령어·구조)</summary>
 
 ### 사전 요구사항
-- Node.js 20+
-- pnpm 9+ (corepack로 호출 가능)
+- Node.js 20+, pnpm 9+ (corepack로 호출)
 
-### 설치
+### 설치 / 빌드
 ```bash
 corepack pnpm install
-```
-
-(Puppeteer가 Chrome 127을 ~/.cache/puppeteer/에 다운로드합니다 — 첫 설치 시 5~10분 소요)
-
-### 빌드
-```bash
 corepack pnpm --filter @kdh/figma-ingest build
 ```
+(첫 설치 시 Puppeteer가 Chrome을 받느라 5~10분 걸립니다)
 
-### CLI로 변환
+### 변환 실행 (CLI)
 ```bash
 node packages/figma-ingest/dist/cli.js \
   packages/figma-ingest/tests/fixtures/simple-form.html \
   output.xml
 ```
 
-출력 XML은:
-- `<?xml version="1.0"`로 시작
-- WebSquare 4-네임스페이스 (`xmlns:w2`, `xmlns:xf`, `xmlns:ev`)
-- UI-01 prefix ID (`ibx_empCd`, `sbx_deptCd`, `btn_search`)
-- 버튼 modifier (`class="btn_cm sch"`, `btn_cm pt`, `btn_cm download`)
-- 상대좌표 (`position:absolute` 없음)
-
 ### 테스트
 ```bash
-# figma-ingest 전체 (74개)
-corepack pnpm --filter @kdh/figma-ingest test
-
-# legacy converter 회귀 (32개 reference-pair smoke)
-corepack pnpm --filter @kdh/legacy-converter regression
-
-# 골든 XML 재생성 (legacy 변환 로직 변경 후만)
-corepack pnpm --filter @kdh/figma-ingest test:golden:regenerate
+corepack pnpm --filter @kdh/figma-ingest test            # 전체 (199 PASS)
+corepack pnpm --filter @kdh/figma-ingest test:golden:regenerate  # 골든 재생성(로직 변경 후만)
 ```
 
----
+### 파이프라인 단계 ↔ 소스 모듈
+| 단계 | 모듈 |
+|---|---|
+| Stage 0 DOM 추출 | `src/dom-extractor.ts` |
+| Stage 1 ABSOLUTE XML | `src/absolute-xml-builder.ts` |
+| Stage 2 RELATIVE 변환 | `src/relative-converter.ts` (legacy 흡수) |
+| Stage 2.5 schbox 정규화 (2C-0) | `src/stage3/schbox-normalizer.ts` |
+| Stage 3 LLM DataCollection 추론 (2A) | `src/stage3/data-collection-inferrer.ts`, `xml-injector.ts` |
+| Stage 3.5 바인딩 (2B + 2C-2) | `src/stage3/data-binder.ts` (`ref-binder`, `grid-reconciler`, `submission-generator`, `detail-binder`) |
+| Phase 1 룰 | `src/id-renamer.ts`, `src/button-modifier.ts` |
+| Stage 4 scwin 핸들러 (2C-1) | `src/stage3/scwin-scaffolder.ts` |
+| 오케스트레이터 | `src/pipeline.ts` |
 
-## 프로젝트 구조
-
-```
-.
-├── packages/
-│   ├── legacy-converter/                # KB 단말 절대→상대 변환 도구 import
-│   │   ├── adapter.js                   # jsdom 기반 IIFE 로더
-│   │   ├── js/                          # sample-converter.js 등 9개 모듈
-│   │   ├── samples/reference-pairs/     # 42개 검증 페어 (KB Craft 출력)
-│   │   └── tests/regression.smoke.js    # 32/32 PASS
-│   │
-│   └── figma-ingest/                    # TS 신규 파이프라인
-│       ├── src/
-│       │   ├── types.ts                 # ComponentSpec, ScreenMeta, QualityScore
-│       │   ├── element-map.ts           # 태그/role/aria → LegacyCtype 분류
-│       │   ├── quality-score.ts         # HTML 시맨틱 점수 (Phase 2 LLM 깊이 분기용)
-│       │   ├── id-renamer.ts            # legacy prefix → UI-01 prefix
-│       │   ├── button-modifier.ts       # 라벨 → btn_cm modifier (UI-04-1)
-│       │   ├── dom-extractor.ts         # Puppeteer DOM 추출 (실좌표)
-│       │   ├── absolute-xml-builder.ts  # ABSOLUTE-coord XML 생성
-│       │   ├── relative-converter.ts    # legacy SampleConverter 래퍼
-│       │   ├── pipeline.ts              # Stage 0→1→2 + Phase 1 룰 오케스트레이터
-│       │   └── cli.ts                   # CLI 엔트리
-│       ├── tests/
-│       │   ├── fixtures/                # 3개 입력 HTML
-│       │   ├── golden/                  # 3개 expected XML
-│       │   └── *.test.ts                # 9개 test 파일
-│       └── dist/                        # tsc 빌드 출력
-│
-├── docs/superpowers/
-│   ├── specs/2026-05-13-html-to-websquare-design.md
-│   └── plans/2026-05-13-phase-0-1-foundation-and-figma-ingest.md
-│
-├── pnpm-workspace.yaml
-├── tsconfig.base.json
-└── package.json
-```
-
----
-
-## 흡수된 기존 자산 (legacy-converter)
-
-이 프로젝트는 별도 모듈로 import한 **KB국민은행 단말 변환 도구**를 Stage 2 엔진으로 재사용한다:
-
-- **sample-converter.js (2,304줄)** — 42개 reference-pair에서 학습된 섹션 분류 패턴 엔진. schbox/gvwbox/titbox/btnbox/tblbox 자동 판별
-- **42개 검증 페어** — 골든 회귀 기반
-- **TAG_RENAME_MAP 훅** — 사이트별 태그 매핑 재타기팅
-- **capture-server.js (Puppeteer)** — Phase 4 시각 회귀에 흡수 예정
-
-원본 출처: `C:/Users/user/.claude/kdh_proj/websquare-publishing-editor/` (KB Craft → 절대좌표 → 상대좌표 변환용)
-
----
-
-## Phase 0+1에서 의도적으로 남긴 trade-offs
-
-각 trade-off는 소스 코드에 명시적 주석으로 문서화되어 있다.
-
-| # | 항목 | 위치 | Phase 2에서 해결 예정 |
-|---|---|---|---|
-| 1 | ID 라운드트립 (`empCd` → `edt_empCd` → `ibx_empCd`) | [dom-extractor.ts](packages/figma-ingest/src/dom-extractor.ts) | Semantic Enricher가 `ComponentSpec.rawHtmlId` 채널로 원본 활용 |
-| 2 | Synthetic GroupBox 휴리스틱 (`planLayout`) | [absolute-xml-builder.ts](packages/figma-ingest/src/absolute-xml-builder.ts) | DOM 단계에서 `<form>`/`<fieldset>` 자연 인식 |
-| 3 | adapter.js global pollution (단일 스레드 전제) | [legacy-converter/adapter.js](packages/legacy-converter/adapter.js) | `vm.runInNewContext` 컨텍스트 격리 |
-| 4 | element-map 인라인 중복 (browser context) | [dom-extractor.ts](packages/figma-ingest/src/dom-extractor.ts) | `page.evaluate(fn, mapJson)` 단일 소스 주입 |
-
----
-
-## 로드맵
-
-| Phase | 상태 | 산출물 |
-|---|---|---|
-| **0 (편입)** | ✅ | 기존 KB 변환 도구 모노레포 import, 32/32 회귀 통과 |
-| **1 (Figma ingest 결정론)** | ✅ | Stage 0~2 + ID 리네임 + 버튼 modifier, 74/74 tests, CLI 작동 |
-| **2 (Semantic Enricher)** | 📋 미구현 | LLM 기반 DataMap/DataList/Submission 추론, ref 바인딩, scwin skeleton |
-| **3 (안티패턴 검증)** | 📋 미구현 | deepsquare 15개 CRITICAL 룰 정적 + 자동 수정 + LLM 피드백 루프 |
-| **4 (시각 회귀)** | 📋 미구현 | capture-server.js 확장 — 입력 HTML vs 최종 XML 보존율 |
-| **5 (검수 UI)** | 📋 미구현 | userspec export + IR diff viewer |
-
-전체 설계는 [`docs/superpowers/specs/2026-05-13-html-to-websquare-design.md`](docs/superpowers/specs/2026-05-13-html-to-websquare-design.md).
-
----
-
-## 컴포넌트 인터페이스
-
-### `convertHtmlToWebSquare(html, options)`
-
+### 핵심 함수
 ```typescript
 import { convertHtmlToWebSquare } from '@kdh/figma-ingest/pipeline';
-
 const xml = await convertHtmlToWebSquare(htmlString, {
-  adaptive: false,            // 반응형 옵션
-  onStage: (name, payload) => console.log(name)  // 디버그 콜백
+  llmClient,        // 있으면 LLM 의미 추론(2A~) 작동, 없으면 결정론 경로만
+  noLlm: false,     // true면 LLM 단계 건너뜀 (Phase 0+1 동작)
+  onStage: (name, payload) => {},  // 디버그 콜백
 });
 ```
 
-### `extractFromHtml(html)`
-
-```typescript
-import { extractFromHtml, closeBrowser } from '@kdh/figma-ingest/dom-extractor';
-
-const result = await extractFromHtml(htmlString);
-// result: { meta, components, qualityScore }
-//   components[i]: { id, rawHtmlId, ctype, label, left, top, width, height, columns? }
-//   qualityScore: { overall, semanticRatio, labelIdRatio, ariaRatio }
-
-await closeBrowser();  // 테스트 cleanup
-```
+</details>
 
 ---
 
-## 개발
+## 📚 관련 문서 (설계·계획서)
 
-### TDD 워크플로
+설계서는 `docs/superpowers/specs/`, 단계별 작업 계획은 `docs/superpowers/plans/` 폴더에 있어요.
+- 전체 설계: `2026-05-13-html-to-websquare-design.md`
+- 2A: LLM 데이터 추론 / 2B: 바인딩+제출 / 2C-0: schbox 정규화 / 2C-1: 조회 동작 / 2C-2: 상세영역 연결
 
-각 src 모듈은 동일 이름의 `tests/*.test.ts`에 unit test가 있다. 변경 시:
-
-```bash
-corepack pnpm --filter @kdh/figma-ingest test:watch
-```
-
-### 골든 회귀 업데이트
-
-legacy 변환 로직이 의도적으로 변경된 경우에만 골든을 재생성:
-
-```bash
-corepack pnpm --filter @kdh/figma-ingest build
-corepack pnpm --filter @kdh/figma-ingest test:golden:regenerate
-```
-
-**반드시 `git diff`로 골든 변경사항을 확인**하고 PR description에 변경 의도를 적는다. 골든 무심코 regenerate는 진짜 회귀를 놓친다.
-
----
-
-## 라이선스 / 출처
-
-- WebSquare 엔진 — 인스웨이브 시스템즈
-- 본 변환 도구 — 인스웨이브 사내 도구
-- 기존 KB 변환 도구 (legacy-converter) — 원작자 별도
-
----
-
-## 관련 문서
-
-- [설계 spec](docs/superpowers/specs/2026-05-13-html-to-websquare-design.md) — 전체 5단계 파이프라인 설계
-- [Phase 0+1 구현 plan](docs/superpowers/plans/2026-05-13-phase-0-1-foundation-and-figma-ingest.md) — 13개 태스크 상세
-- WRM 레퍼런스 모델 — `C:/WebSquare_Studio/ai_x64/websquare_26.0417/workspace/WRM/`
-- deepsquare LLM DSL — `<WRM>/deepsquare/`
+> **메모**: 새로운 단계(플랜)를 끝낼 때마다 이 README도 함께 쉽게 업데이트합니다.
