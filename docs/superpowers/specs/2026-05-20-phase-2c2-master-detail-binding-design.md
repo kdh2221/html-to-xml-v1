@@ -62,17 +62,21 @@ xml = bindDetailTables(xml, ir);  // ★ 2C-2 신규
 ### 4-2. 타이밍·영역 단위 주의
 
 - **타이밍**: 2C-2는 Stage 3.5(Phase 1 button-modifier *이전*) → 버튼에 `btn_cm sch` 클래스가 아직 없다. 따라서 조회버튼은 **라벨(조회/검색/초기화)**로 탐지한다(`btn_cm sch`는 동일 신호의 최종-XML 형태; 2C-0 `hasSearchButton`과 동일 기준).
-- **영역 단위**: 2C-0가 조회버튼을 폼(`schbox_inner#tbl_search`)에서 떼어 **형제** `btn_schbox`로 옮긴다. "테이블 안에 버튼 있나"로 보면 검색 폼조차 버튼이 없어 보여 오분류된다 → 판정은 **감싸는 바깥 영역(schbox/tblbox 그룹) 기준**으로, 형제까지 포함해 조회버튼 존재를 본다.
+- **영역 단위 + 최외곽 폼 영역**: 2C-0가 조회버튼을 폼(`schbox_inner#tbl_search`)에서 떼어 **형제** `btn_schbox`로 옮긴다. "테이블 안에 버튼 있나"로 보면 검색 폼조차 버튼이 없어 보여 오분류된다 → 판정은 **감싸는 바깥 영역 기준**으로 형제까지 포함해 조회버튼 존재를 본다.
+  - **중첩 주의 (search-grid 실측)**: 2C-0 출력에서 검색영역이 `<xf:group class="grpbox_wrap schbox"> > <xf:group class="tblbox"> > schbox_inner#tbl_search` 형태로, `tblbox`가 `schbox` **안에 중첩**될 수 있다. 이때 조회버튼은 안쪽 tblbox의 **형제**(바깥 schbox 안)다 → 안쪽 tblbox만 보면 버튼이 없어 상세로 오분류된다.
+  - 해결: 폼 영역(class 토큰 schbox 또는 tblbox) 중 **다른 schbox/tblbox에 중첩되지 않은 최외곽 영역만** 후보로 삼고, 그 최외곽 영역(전체 하위)에 조회버튼이 있으면 검색영역으로 제외한다. search-grid에선 최외곽 `grpbox_wrap schbox`가 조회버튼 보유 → 제외(중첩 tblbox는 후보 아님). master-detail에선 상세 `tblbox`가 최외곽 + 조회버튼 없음 → 상세로 채택.
 
 ### 4-3. 바인딩 대상 = IR의 DataList
 
 운영 게이트는 "IR에 DataList가 존재하는가". IR에 DataList가 없으면 대상 없음 → no-op. 2C-2는 IR의 (단일) 첫 DataList를 대상으로 한다 — 다중 grid/DataList는 향후.
 
 ```
-detectBoundDataList(ir): { dltId, columns } | null   // IR에 DataList 있으면 첫 번째
-hasSearchButtonInRegion(regionXml): boolean          // 영역(형제 포함)에 조회/검색/초기화 라벨 trigger 존재 (2C-0 hasSearchButton 재사용)
-detectDetailInputs(xml): DetailInput[]   // 조회버튼 없는 입력 테이블의 input/select1/inputCalendar
+detectDetailInputs(xml): DetailInput[]   // 최외곽 폼 영역(다른 schbox/tblbox 비중첩) 중
+                                          // 조회버튼 없는 영역의 input/select1/inputCalendar (id+label)
+                                          // 조회버튼 탐지는 2C-0 hasSearchButton 재사용
                                           // DetailInput { id, label }
+matchColumn(label, columns): colId | null  // columns 중 name === label인 컬럼 id
+bindDetailTables(xml, ir): string          // ir.dataLists[0] 대상; 각 상세 입력에 ref 주입
 ```
 
 ## 5. 바인딩 로직 (라벨 → 컬럼 매칭)
@@ -113,9 +117,10 @@ matchColumn(label, columns): colId | null   // columns 중 name === label인 컬
 ## 8. 테스트 전략
 
 ### 8-1. 단위 (XML 직접 입력, mock 불필요)
-- `hasSearchButtonInRegion`: 영역(형제 btn_schbox 포함)에 조회 라벨 trigger 있으면 true
-- `detectDetailInputs`: 조회버튼 **없는** 입력 테이블의 input/select/calendar 추출
+- `detectDetailInputs`:
+  - 조회버튼 **없는** 최외곽 폼 영역의 input/select/calendar 추출
   - 검색영역(schbox + btn_schbox/조회) 제외 (조회버튼 형제 존재)
+  - **중첩 케이스**: `schbox > tblbox > schbox_inner`(search-grid형)에서 안쪽 tblbox를 상세로 오인하지 않음 (최외곽 schbox가 조회버튼 보유 → 전체 제외)
   - **조회버튼 없는 schbox는 상세로 포함** (의미 기반 판정 검증 — 핵심 케이스)
 - `matchColumn`: 라벨→컬럼명 매칭 (일치/불일치)
 - `bindDetailTables`: ref 주입 (input + select1 + calendar), 검색폼 입력 제외, 라벨 불일치 생략, 멱등(기존 ref 보존)
