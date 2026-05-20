@@ -1,0 +1,22 @@
+{
+  "dataMaps": [{
+    "id": "dma_search",
+    "name": "검색조건",
+    "keys": [
+      { "id": "EMP_CD", "name": "사번", "dataType": "text" },
+      { "id": "DEPT_CD", "name": "부서 코드", "dataType": "text" }
+    ]
+  }],
+  "dataLists": [{
+    "id": "dlt_list",
+    "name": "사원목록",
+    "saveRemovedData": true,
+    "columns": [
+      { "id": "EMP_CD", "name": "사번", "dataType": "text" },
+      { "id": "EMP_NM", "name": "성명", "dataType": "text" },
+      { "id": "DEPT_NM", "name": "부서명", "dataType": "text" }
+    ]
+  }],
+  "confidence": 0.9,
+  "notes": "simple-form fixture: 사번/부서 검색조건 + 사번/성명/부서명 그리드"
+}

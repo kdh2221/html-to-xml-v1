@@ -1,0 +1,15 @@
+{
+  "dataMaps": [],
+  "dataLists": [{
+    "id": "dlt_memberBasic",
+    "name": "사원목록",
+    "saveRemovedData": true,
+    "columns": [
+      { "id": "EMP_CD", "name": "사번", "dataType": "text" },
+      { "id": "EMP_NM", "name": "성명", "dataType": "text" },
+      { "id": "DEPT_NM", "name": "부서명", "dataType": "text" }
+    ]
+  }],
+  "confidence": 0.85,
+  "notes": "마스터-디테일 화면: 사원목록 그리드. dma_search 생략"
+}
