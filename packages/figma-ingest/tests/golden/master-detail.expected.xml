@@ -16,6 +16,8 @@
 		</xf:model>
 		<script type="text/javascript" lazy="false"><![CDATA[
 scwin.onpageload = function() {
+	$c.util.setGridViewDelCheckBox([grd_005]);
+	$c.data.setChangeCheckedDc([dlt_memberBasic]);
 };
 ]]></script>
 	</head>

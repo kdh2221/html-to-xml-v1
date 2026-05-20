@@ -132,4 +132,21 @@ describe('pipeline.convertHtmlToWebSquare with Stage 3 (Mock LLM)', () => {
     expect(xml).not.toContain('<w2:dataMap');
     expect(xml).not.toContain('<w2:dataList');
   }, 60000);
+
+  it('simple-form: scwin 조회 핸들러 (Phase 2C-1)', async () => {
+    const html = fs.readFileSync(path.join(FIX_DIR, 'simple-form.html'), 'utf-8');
+    const xml = await convertHtmlToWebSquare(html, { llmClient: makeMock('simple-form') });
+    expect(xml).toContain('$c.win.setEnterKeyEvent(tbl_search, scwin.');
+    expect(xml).toContain('$c.sbm.execute(sbm_search);');
+    expect(xml).toContain('scwin.sbm_search_submitdone = function(e) {');
+    expect(xml).toMatch(/<xf:trigger\b[^>]*class="btn_cm sch"[^>]*ev:onclick="scwin\.\w+_onclick"/);
+  }, 60000);
+
+  it('master-detail: grid 호출만, sbm.execute 없음 (Phase 2C-1)', async () => {
+    const html = fs.readFileSync(path.join(FIX_DIR, 'master-detail.html'), 'utf-8');
+    const xml = await convertHtmlToWebSquare(html, { llmClient: makeMock('master-detail') });
+    expect(xml).toContain('$c.util.setGridViewDelCheckBox([');
+    expect(xml).not.toContain('$c.sbm.execute');
+    expect(xml).not.toContain('sbm_search_submitdone');
+  }, 60000);
 });

@@ -24,6 +24,14 @@
 		</xf:model>
 		<script type="text/javascript" lazy="false"><![CDATA[
 scwin.onpageload = function() {
+	$c.win.setEnterKeyEvent(tbl_search, scwin.btn_006_onclick);
+	$c.util.setGridViewDelCheckBox([grd_007]);
+	$c.data.setChangeCheckedDc([dlt_list]);
+};
+scwin.btn_006_onclick = function() {
+	$c.sbm.execute(sbm_search);
+};
+scwin.sbm_search_submitdone = function(e) {
 };
 ]]></script>
 	</head>
@@ -60,7 +68,7 @@ scwin.onpageload = function() {
 						</xf:group>
 					</xf:group>
 				</xf:group></xf:group>
-			<xf:group class="btn_schbox"><xf:trigger ctype="Button" style="" id="btn_006" tabIndex="1" type="button" hierarchy="btn_006" orgid="btn_006" class="btn_cm sch"><xf:label><![CDATA[조회]]></xf:label></xf:trigger></xf:group></xf:group>
+			<xf:group class="btn_schbox"><xf:trigger ctype="Button" style="" id="btn_006" tabIndex="1" type="button" hierarchy="btn_006" orgid="btn_006" class="btn_cm sch" ev:onclick="scwin.btn_006_onclick"><xf:label><![CDATA[조회]]></xf:label></xf:trigger></xf:group></xf:group>
 			<xf:group id="" class="gvwbox">
 				<w2:gridView ctype="IBSheet" class="gvw" hierarchy="grd_007" id="grd_007" orgid="grd_007" style="width:100%; height:150px;" tabIndex="1" dataList="data:dlt_list">
 					<w2:header id="header1">
