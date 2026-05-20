@@ -17,7 +17,7 @@ export interface DetailInput { id: string; label: string; }
 
 const INPUT_TAGS = ['xf:input', 'xf:select1', 'xf:select', 'xf:textarea', 'xf:inputcalendar', 'w2:autocomplete'];
 
-/** cheerio 가 보존하는 태그 원형(`xf:input` 등)과 비교. 대소문자 무시. */
+/** cheerio 는 태그 대소문자를 보존(예: `xf:inputCalendar`) → 소문자로 정규화해 INPUT_TAGS(소문자)와 비교. */
 function tagNameOf(el: unknown): string {
   const node = el as { tagName?: string; name?: string };
   return (node.tagName ?? node.name ?? '').toLowerCase();
