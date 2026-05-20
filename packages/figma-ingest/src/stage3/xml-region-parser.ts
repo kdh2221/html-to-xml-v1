@@ -51,7 +51,7 @@ export function extractRegions(xml: string): Region[] {
 
     const labels: string[] = [];
     const fields: Array<{ label: string; componentId: string }> = [];
-    const INPUT_TAGS = ['xf:input', 'xf:select1', 'xf:select', 'xf:textarea', 'w2:inputcalendar', 'w2:autocomplete'];
+    const INPUT_TAGS = ['xf:input', 'xf:select1', 'xf:select', 'xf:textarea', 'xf:inputcalendar', 'w2:autocomplete'];
 
     // 문서 순서로 descendant 순회: w2:textbox → labels 누적, input → 직전 label 과 페어링
     $el.find('*').each((_2, node) => {

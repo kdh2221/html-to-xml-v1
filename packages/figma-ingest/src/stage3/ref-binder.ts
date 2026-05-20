@@ -12,7 +12,7 @@
 import { extractRegions } from './xml-region-parser';
 import type { DataCollectionIR } from '../types';
 
-const INPUT_TAGS = '(?:xf:input|xf:select1|xf:select|xf:textarea|w2:inputCalendar|w2:autoComplete)';
+const INPUT_TAGS = '(?:xf:input|xf:select1|xf:select|xf:textarea|xf:inputCalendar|w2:autoComplete)';
 
 function escapeRegex(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

@@ -88,6 +88,7 @@ describe('pipeline.convertHtmlToWebSquare with Stage 3 (Mock LLM)', () => {
     expect(xml).toContain('<w2:dataMap id="dma_search"');
     expect(xml).toContain('id="ORDER_DATE" name="주문일" dataType="date"');
     expect(xml).toContain('id="AMOUNT" name="금액" dataType="number"');
+    expect(xml).toMatch(/<xf:inputCalendar\b[^>]*\bid="ica_orderDate"[^>]*ref="data:dma_search\.ORDER_DATE"/);
   }, 60000);
 
   it('master-detail: DataList만 생성 (DataMap 없음)', async () => {

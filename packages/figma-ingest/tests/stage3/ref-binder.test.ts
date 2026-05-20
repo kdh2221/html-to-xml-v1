@@ -51,6 +51,14 @@ describe('bindRefs', () => {
     expect(bindRefs(XML, noMap)).toBe(XML);
   });
 
+  it('xf:inputCalendar에도 ref 부착', () => {
+    const xml = `<root><xf:group class="schbox"><xf:inputCalendar id="cal_orderDate" label="주문일"/></xf:group></root>`;
+    const out = bindRefs(xml, ir([
+      { id: 'ORDER_DATE', name: '주문일', dataType: 'date', boundComponentId: 'cal_orderDate' },
+    ]));
+    expect(out).toMatch(/<xf:inputCalendar id="cal_orderDate"[^>]*ref="data:dma_search\.ORDER_DATE"/);
+  });
+
   it('매칭 컴포넌트 없으면 해당 key skip (crash 없음)', () => {
     const out = bindRefs(XML, ir([
       { id: 'NOPE', name: '없는필드', dataType: 'text', boundComponentId: 'edt_nonexist' },
