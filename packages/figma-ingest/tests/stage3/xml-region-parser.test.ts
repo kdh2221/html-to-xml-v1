@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { extractRegions } from '../../src/stage3/xml-region-parser';
+import { normalizeSchbox } from '../../src/stage3/schbox-normalizer';
 
 const SCHBOX_XML = `
 <xf:group class="schbox">
@@ -90,5 +91,15 @@ describe('extractRegions', () => {
     const xml = `<root><head meta_screenName="사원 조회"/>${SCHBOX_XML}</root>`;
     const regions = extractRegions(xml);
     expect(regions[0].screenName).toBe('사원 조회');
+  });
+
+  it('정규화된 schbox에서 region 추출 (Phase 2C-0 연계)', () => {
+    const raw = `<root><xf:group class="tblbox" id="grp_search_001"><xf:group class="w2tb tbl"><xf:group class="w2tb_th"><w2:textbox label="사번"/></xf:group><xf:group class="w2tb_td"><xf:input id="ibx_empCd" label="사번"/><xf:trigger id="b"><xf:label><![CDATA[조회]]></xf:label></xf:trigger></xf:group></xf:group></xf:group></root>`;
+    const normalized = normalizeSchbox(raw);
+    const regions = extractRegions(normalized);
+    const sch = regions.find(r => r.kind === 'schbox');
+    expect(sch).toBeDefined();
+    if (sch?.kind !== 'schbox') throw new Error('not schbox');
+    expect(sch.fields).toContainEqual({ label: '사번', componentId: 'ibx_empCd' });
   });
 });

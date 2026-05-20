@@ -115,6 +115,17 @@ describe('pipeline.convertHtmlToWebSquare with Stage 3 (Mock LLM)', () => {
     expect(xml).not.toContain('<xf:submission');
   }, 60000);
 
+  it('simple-form: 검색영역이 표준 schbox 구조 (Phase 2C-0)', async () => {
+    const html = fs.readFileSync(path.join(FIX_DIR, 'simple-form.html'), 'utf-8');
+    const xml = await convertHtmlToWebSquare(html, { llmClient: makeMock('simple-form') });
+    expect(xml).toContain('<xf:group class="schbox_inner" id="tbl_search">');
+    expect(xml).toContain('<xf:group class="btn_schbox">');
+    expect(xml).not.toContain('grp_search');
+    expect(xml).not.toContain('tblbox');
+    expect(xml).toMatch(/<xf:group class="btn_schbox">[\s\S]*btn_cm sch/);
+    expect(xml).toMatch(/schbox_inner[\s\S]*ibx_empCd[^>]*ref="data:dma_search\.EMP_CD"/);
+  }, 60000);
+
   it('noLlm: true → Phase 0+1 동작 (DataCollection 비어있음)', async () => {
     const html = fs.readFileSync(path.join(FIX_DIR, 'simple-form.html'), 'utf-8');
     const xml = await convertHtmlToWebSquare(html, { noLlm: true });

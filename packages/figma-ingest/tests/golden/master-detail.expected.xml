@@ -24,9 +24,9 @@ scwin.onpageload = function() {
 			<xf:group id="" class="titbox">
 				<w2:textbox tagname="h3" style="" id="tbx_001" label="사원 정보 관리" class="tit_main"></w2:textbox>
 			</xf:group>
-			<xf:group class="tblbox" id="grp_search_001" meta_snippetCategory="05_입출력테이블" meta_snippetKeyComponent="true" meta_snippetName="5_01 테이블(1단)"
+			<xf:group class="schbox" meta_snippetCategory="05_입출력테이블" meta_snippetKeyComponent="true" meta_snippetName="5_01 테이블(1단)"
 				style="">
-				<xf:group class="w2tb tbl" id="" style="" tagname="table">
+				<xf:group class="schbox_inner" id="tbl_search"><xf:group class="w2tb tbl" id="" style="" tagname="table">
 					<w2:attributes>
 						<w2:summary></w2:summary>
 					</w2:attributes>
@@ -40,11 +40,11 @@ scwin.onpageload = function() {
 						</xf:group>
 						<xf:group class="w2tb_td" style="" tagname="td">
 							<xf:input ctype="Edit" style="width:177px;" id="ibx_empNm" label="성명" tabIndex="1" class="" hierarchy="ibx_empNm" orgid="ibx_empNm"/>
-							<xf:trigger ctype="Button" style="" id="btn_004" tabIndex="1" type="button" hierarchy="btn_004" orgid="btn_004" class="btn_cm sch"><xf:label><![CDATA[조회]]></xf:label></xf:trigger>
+							
 						</xf:group>
 					</xf:group>
-				</xf:group>
-			</xf:group>
+				</xf:group></xf:group>
+			<xf:group class="btn_schbox"><xf:trigger ctype="Button" style="" id="btn_004" tabIndex="1" type="button" hierarchy="btn_004" orgid="btn_004" class="btn_cm sch"><xf:label><![CDATA[조회]]></xf:label></xf:trigger></xf:group></xf:group>
 			<xf:group id="" class="gvwbox">
 				<w2:gridView ctype="IBSheet" class="gvw" hierarchy="grd_005" id="grd_005" orgid="grd_005" style="width:100%; height:150px;" tabIndex="1" dataList="data:dlt_memberBasic">
 					<w2:header id="header1">
