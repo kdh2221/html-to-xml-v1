@@ -21,6 +21,7 @@ import { inferDataCollection } from './stage3/data-collection-inferrer';
 import { injectDataCollection } from './stage3/xml-injector';
 import { bindDataCollection } from './stage3/data-binder';
 import { normalizeSchbox } from './stage3/schbox-normalizer';
+import { scaffoldScwinHandlers } from './stage3/scwin-scaffolder';
 import type { LLMClientLike } from './stage3/llm-mock';
 import type { ExtractionResult } from './types';
 
@@ -67,6 +68,9 @@ export async function convertHtmlToWebSquare(
   // Phase 1 룰: ID prefix UI-01 + 버튼 modifier
   let result = renameIdToUi01(enrichedXml);
   result = applyButtonModifiersInXml(result);
+
+  // Stage 4: scwin 조회 흐름 핸들러 (sbm_search·grid 없으면 no-op)
+  result = scaffoldScwinHandlers(result);
   options.onStage?.('phase1-finalized', result);
 
   return result;
