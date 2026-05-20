@@ -43,3 +43,32 @@ describe('bindDataCollection (Stage 3.5 orchestrator)', () => {
     expect(out).not.toContain('dataList="data:');
   });
 });
+
+const DETAIL_IR: DataCollectionIR = {
+  dataMaps: [],
+  dataLists: [{
+    id: 'dlt_memberBasic',
+    name: '사원목록',
+    columns: [
+      { id: 'EMP_CD', name: '사번', dataType: 'text' },
+      { id: 'EMP_NM', name: '성명', dataType: 'text' },
+      { id: 'DEPT_NM', name: '부서명', dataType: 'text' },
+    ],
+  }],
+  confidence: 0.9,
+};
+
+const MD = `<body>
+  <xf:group class="tblbox"><xf:group class="w2tb tbl">
+    <xf:input id="edt_empCdDetail" label="사번"/>
+    <xf:select1 id="sel_deptNmDetail" label="부서명"/>
+  </xf:group></xf:group>
+</body>`;
+
+describe('bindDataCollection — 상세 바인딩 통합 (2C-2)', () => {
+  it('상세 입력이 DataList ref로 바인딩됨', () => {
+    const out = bindDataCollection(MD, DETAIL_IR);
+    expect(out).toContain('id="edt_empCdDetail" ref="data:dlt_memberBasic.EMP_CD"');
+    expect(out).toContain('id="sel_deptNmDetail" ref="data:dlt_memberBasic.DEPT_NM"');
+  });
+});
