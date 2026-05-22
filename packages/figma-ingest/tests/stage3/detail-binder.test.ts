@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { detectDetailInputs } from '../../src/stage3/detail-binder';
 import { matchColumn, bindDetailTables } from '../../src/stage3/detail-binder';
+import { markMandatory, assignDetailGroupId } from '../../src/stage3/detail-binder';
 import type { DataCollectionIR } from '../../src/types';
 
 const COLUMNS = [
@@ -123,5 +124,51 @@ describe('detectDetailInputs', () => {
 
   it('폼 영역 없으면 빈 배열', () => {
     expect(detectDetailInputs(`<body><xf:group class="gvwbox"></xf:group></body>`)).toEqual([]);
+  });
+});
+
+describe('markMandatory', () => {
+  it('입력 태그에 mandatory="true" 추가 (id 뒤)', () => {
+    const xml = `<xf:input id="edt_empCdDetail" label="사번"/>`;
+    expect(markMandatory(xml, 'edt_empCdDetail')).toContain('id="edt_empCdDetail" mandatory="true"');
+  });
+  it('이미 mandatory 있으면 보존', () => {
+    const xml = `<xf:input id="edt_empCdDetail" mandatory="true" label="사번"/>`;
+    expect(markMandatory(xml, 'edt_empCdDetail')).toBe(xml);
+  });
+});
+
+describe('assignDetailGroupId', () => {
+  it('키 입력을 감싸는 tblbox region에 id="grp_detail" 부여 (기존 빈 id 교체)', () => {
+    const xml = `<xf:group class="tblbox" id=""><xf:group class="w2tb tbl"><xf:input id="edt_empCdDetail" label="사번"/></xf:group></xf:group>`;
+    const out = assignDetailGroupId(xml, 'edt_empCdDetail');
+    expect(out).toContain('<xf:group class="tblbox" id="grp_detail">');
+  });
+  it('이미 grp_detail이면 그대로', () => {
+    const xml = `<xf:group class="tblbox" id="grp_detail"><xf:input id="edt_x" label="x"/></xf:group>`;
+    expect(assignDetailGroupId(xml, 'edt_x')).toBe(xml);
+  });
+});
+
+describe('bindDetailTables — grp_detail + 키 mandatory (2C-3)', () => {
+  const IR2: DataCollectionIR = {
+    dataMaps: [],
+    dataLists: [{ id: 'dlt_memberBasic', name: '사원목록', columns: [
+      { id: 'EMP_CD', name: '사번', dataType: 'text' },
+      { id: 'EMP_NM', name: '성명', dataType: 'text' },
+    ] }],
+    confidence: 0.9,
+  };
+  const MD2 = `<body><xf:group class="tblbox" id=""><xf:group class="w2tb tbl">
+    <xf:input id="edt_empCdDetail" label="사번"/>
+    <xf:input id="edt_empNmDetail" label="성명"/>
+  </xf:group></xf:group></body>`;
+
+  it('상세 region에 grp_detail + 키(첫 컬럼 사번) 입력만 mandatory', () => {
+    const out = bindDetailTables(MD2, IR2);
+    expect(out).toContain('<xf:group class="tblbox" id="grp_detail">');
+    expect(out).toMatch(/id="edt_empCdDetail"[^>]*mandatory="true"/);
+    expect(out).not.toMatch(/id="edt_empNmDetail"[^>]*mandatory=/);
+    expect(out).toContain('id="edt_empCdDetail" ref="data:dlt_memberBasic.EMP_CD"');
   });
 });

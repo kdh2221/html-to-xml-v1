@@ -77,6 +77,14 @@ export function bindDetailTables(xml: string, ir: DataCollectionIR): string {
   if (inputs.length === 0) return xml;
 
   let result = xml;
+  // 2C-3: 상세 region에 grp_detail 부여 + 키 컬럼(첫 컬럼) 입력 mandatory
+  // (ref 주입 전에 mandatory를 먼저 부여 → ref가 id 바로 뒤에 위치, mandatory는 그 뒤로 밀림)
+  result = assignDetailGroupId(result, inputs[0].id);
+  const keyName = dlt.columns[0]?.name;
+  const keyInput = inputs.find(inp => inp.label === keyName);
+  if (keyInput) {
+    result = markMandatory(result, keyInput.id);
+  }
   for (const inp of inputs) {
     const colId = matchColumn(inp.label, dlt.columns);
     if (colId) {
@@ -84,4 +92,38 @@ export function bindDetailTables(xml: string, ir: DataCollectionIR): string {
     }
   }
   return result;
+}
+
+const MANDATORY_INPUT_TAGS = '(?:xf:input|xf:select1|xf:select|xf:textarea|xf:inputCalendar|w2:autoComplete)';
+
+/** 입력 태그(id)에 mandatory="true" 부여(없을 때만). */
+export function markMandatory(xml: string, id: string): string {
+  const re = new RegExp(`(<${MANDATORY_INPUT_TAGS}\\b[^>]*?\\bid="${id}")([^>]*?)(\\/?>)`);
+  return xml.replace(re, (full, head: string, mid: string, close: string) => {
+    if (/\bmandatory\s*=/.test(head) || /\bmandatory\s*=/.test(mid)) return full;
+    return `${head} mandatory="true"${mid}${close}`;
+  });
+}
+
+/**
+ * 키 입력(id)을 감싸는 최근접 폼영역(<xf:group ...schbox|tblbox...>) 여는 태그에
+ * id="grp_detail" 부여. 이미 있으면 그대로. (역방향 스캔 — cheerio 재직렬화 회피)
+ */
+export function assignDetailGroupId(xml: string, keyInputId: string): string {
+  const inputIdx = xml.indexOf(`id="${keyInputId}"`);
+  if (inputIdx === -1) return xml;
+  const regionRe = /<xf:group\b[^>]*\bclass="[^"]*\b(?:schbox|tblbox)\b[^"]*"[^>]*>/g;
+  let lastMatch: RegExpExecArray | null = null;
+  let m: RegExpExecArray | null;
+  while ((m = regionRe.exec(xml)) !== null) {
+    if (m.index > inputIdx) break;
+    lastMatch = m;
+  }
+  if (!lastMatch) return xml;
+  const openTag = lastMatch[0];
+  if (/\bid="grp_detail"/.test(openTag)) return xml;
+  const newTag = /\bid="[^"]*"/.test(openTag)
+    ? openTag.replace(/\bid="[^"]*"/, 'id="grp_detail"')
+    : openTag.replace(/(<xf:group\b)/, '$1 id="grp_detail"');
+  return xml.slice(0, lastMatch.index) + newTag + xml.slice(lastMatch.index + openTag.length);
 }
