@@ -60,3 +60,45 @@ describe('generateSubmissions', () => {
     expect(out.indexOf('</xf:model>')).toBeGreaterThan(sbm);
   });
 });
+
+const DLT_ONLY: DataCollectionIR = {
+  dataMaps: [],
+  dataLists: [{ id: 'dlt_memberBasic', name: '사원목록', columns: [{ id: 'EMP_CD', name: '사번', dataType: 'text' }] }],
+  confidence: 0.9,
+};
+
+const XML_WITH_SAVE = `<xf:model><w2:dataCollection></w2:dataCollection></xf:model>
+<xf:trigger id="btn_013"><xf:label><![CDATA[저장]]></xf:label></xf:trigger>`;
+const XML_NO_SAVE = `<xf:model><w2:dataCollection></w2:dataCollection></xf:model>
+<xf:trigger id="btn_006"><xf:label><![CDATA[조회]]></xf:label></xf:trigger>`;
+
+describe('generateSubmissions — sbm_save (2C-3)', () => {
+  it('저장버튼 + DataList → sbm_save 생성 (ref=target=DataList, submitdone)', () => {
+    const out = generateSubmissions(XML_WITH_SAVE, DLT_ONLY);
+    expect(out).toContain('<xf:submission id="sbm_save" ref="data:json,dlt_memberBasic" target="data:json,dlt_memberBasic"');
+    expect(out).toContain('ev:submitdone="scwin.sbm_save_submitdone"');
+    expect(out).toContain('action="/TODO_VERIFY"');
+  });
+
+  it('저장버튼 없으면 sbm_save 미생성', () => {
+    const out = generateSubmissions(XML_NO_SAVE, DLT_ONLY);
+    expect(out).not.toContain('sbm_save');
+    expect(out).toBe(XML_NO_SAVE);
+  });
+
+  it('DataList 없으면 sbm_save 미생성', () => {
+    const emptyIr: DataCollectionIR = { dataMaps: [], dataLists: [], confidence: 0.5 };
+    expect(generateSubmissions(XML_WITH_SAVE, emptyIr)).toBe(XML_WITH_SAVE);
+  });
+
+  it('기존 sbm_search 회귀 (DataMap 있으면 sbm_search 생성)', () => {
+    const ir: DataCollectionIR = {
+      dataMaps: [{ id: 'dma_search', name: '검색', keys: [{ id: 'ORDER_NO', name: '주문번호', dataType: 'text' }] }],
+      dataLists: [{ id: 'dlt_orderList', name: '주문', columns: [{ id: 'ORDER_NO', name: '주문번호', dataType: 'text' }] }],
+      confidence: 0.9,
+    };
+    const out = generateSubmissions(XML_WITH_SAVE, ir);
+    expect(out).toContain('<xf:submission id="sbm_search" ref="data:json,dma_search" target="data:json,dlt_orderList"');
+    expect(out).toContain('id="sbm_save"');
+  });
+});
