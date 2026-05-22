@@ -198,4 +198,15 @@ describe('pipeline.convertHtmlToWebSquare with Stage 3 (Mock LLM)', () => {
     expect(xml).not.toContain('sbm_save');
     expect(xml).not.toContain('grp_detail');
   }, 60000);
+
+  it('파이프라인 onStage(validation) 발생 + simple-form critical 0 (Phase 3A)', async () => {
+    const html = fs.readFileSync(path.join(FIX_DIR, 'simple-form.html'), 'utf-8');
+    let violations: Array<{ severity: string }> | null = null;
+    await convertHtmlToWebSquare(html, {
+      llmClient: makeMock('simple-form'),
+      onStage: (name, payload) => { if (name === 'validation') violations = payload as Array<{ severity: string }>; },
+    });
+    expect(violations).not.toBeNull();
+    expect((violations as unknown as Array<{ severity: string }>).filter(v => v.severity === 'critical')).toEqual([]);
+  }, 60000);
 });

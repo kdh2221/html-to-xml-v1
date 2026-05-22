@@ -5,6 +5,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { convertHtmlToWebSquare } from './pipeline';
+import { validateAntiPatterns } from './validate/anti-pattern-validator';
 import { closeBrowser } from './dom-extractor';
 import { LLMClient } from './stage3/llm-client';
 import { CostTracker } from './stage3/cost-tracker';
@@ -48,6 +49,17 @@ async function main() {
     const xml = await convertHtmlToWebSquare(html, { adaptive, noLlm, llmClient });
     fs.writeFileSync(absOutput, xml, 'utf-8');
     console.log(`OK Wrote ${xml.length} chars`);
+    const violations = validateAntiPatterns(xml);
+    if (violations.length) {
+      const crit = violations.filter(v => v.severity === 'critical').length;
+      console.warn(`\n⚠️  안티패턴 ${violations.length}건 (critical ${crit})`);
+      for (const v of violations) {
+        console.warn(`  [${v.severity.toUpperCase()}] ${v.rule}${v.location ? ' ' + v.location : ''} — ${v.message}`);
+        console.warn(`        ↳ 대안: ${v.remediation}`);
+      }
+    } else {
+      console.log('✅ 안티패턴 검증 통과 (위반 0)');
+    }
     if (tracker) {
       const total = tracker.getTotal();
       console.log(`💰 LLM 비용 (이번 conversion): $${total.toFixed(4)}`);

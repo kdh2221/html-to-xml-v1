@@ -22,6 +22,8 @@ import { injectDataCollection } from './stage3/xml-injector';
 import { bindDataCollection } from './stage3/data-binder';
 import { normalizeSchbox } from './stage3/schbox-normalizer';
 import { scaffoldScwinHandlers } from './stage3/scwin-scaffolder';
+import { validateAntiPatterns } from './validate/anti-pattern-validator';
+import { fixAsyncAwait } from './validate/anti-pattern-fixer';
 import type { LLMClientLike } from './stage3/llm-mock';
 import type { ExtractionResult } from './types';
 
@@ -71,6 +73,9 @@ export async function convertHtmlToWebSquare(
 
   // Stage 4: scwin 조회 흐름 핸들러 (sbm_search·grid 없으면 no-op)
   result = scaffoldScwinHandlers(result);
+  result = fixAsyncAwait(result);   // #2 안전 자동수정
+
+  options.onStage?.('validation', validateAntiPatterns(result));
   options.onStage?.('phase1-finalized', result);
 
   return result;
