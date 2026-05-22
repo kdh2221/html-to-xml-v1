@@ -1,7 +1,7 @@
 import { describe, expect, it, afterAll } from 'vitest';
 import * as path from 'path';
 import * as fs from 'fs';
-import { extractFromHtml, closeBrowser } from '../src/dom-extractor';
+import { extractFromHtml, closeBrowser, captureInputScreenshot } from '../src/dom-extractor';
 
 const FIXTURE = fs.readFileSync(
   path.join(__dirname, 'fixtures', 'simple-form.html'),
@@ -93,4 +93,17 @@ describe('extractFromHtml', () => {
     expect(classifyElement('button', {})).toBe('Button');
     expect(classifyElement('table', {})).toBe('GridView');
   }, 30000);
+});
+
+describe('captureInputScreenshot', () => {
+  afterAll(async () => {
+    await closeBrowser();
+  });
+
+  it('입력 HTML 렌더 PNG Buffer 반환 (PNG 매직바이트)', async () => {
+    const png = await captureInputScreenshot('<html><body><button>조회</button></body></html>');
+    expect(png.length).toBeGreaterThan(100);
+    expect(png[0]).toBe(0x89);  // PNG magic
+    expect(png[1]).toBe(0x50);  // 'P'
+  }, 60000);
 });

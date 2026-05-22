@@ -7,7 +7,7 @@ import * as path from 'path';
 import { convertHtmlToWebSquare } from './pipeline';
 import { validateAntiPatterns } from './validate/anti-pattern-validator';
 import type { PreservationReport } from './validate/preservation-report';
-import { closeBrowser } from './dom-extractor';
+import { closeBrowser, captureInputScreenshot } from './dom-extractor';
 import { LLMClient } from './stage3/llm-client';
 import { CostTracker } from './stage3/cost-tracker';
 
@@ -15,10 +15,12 @@ async function main() {
   const args = process.argv.slice(2);
   const adaptive = args.includes('--adaptive');
   const noLlm = args.includes('--no-llm');
-  const positional = args.filter(a => !a.startsWith('--'));
+  const shotIdx = args.indexOf('--screenshot');
+  const screenshotPath = shotIdx >= 0 ? args[shotIdx + 1] : null;
+  const positional = args.filter((a, i) => !a.startsWith('--') && !(shotIdx >= 0 && i === shotIdx + 1));
 
   if (positional.length < 2) {
-    console.error('Usage: figma-to-ws <input.html> <output.xml> [--adaptive] [--no-llm]');
+    console.error('Usage: figma-to-ws <input.html> <output.xml> [--adaptive] [--no-llm] [--screenshot <path>]');
     process.exit(1);
   }
 
@@ -72,6 +74,11 @@ async function main() {
       }
     } else {
       console.log('✅ 안티패턴 검증 통과 (위반 0)');
+    }
+    if (screenshotPath) {
+      const png = await captureInputScreenshot(html);
+      fs.writeFileSync(path.resolve(screenshotPath), png);
+      console.log(`🖼️  입력 스크린샷 저장: ${path.resolve(screenshotPath)}`);
     }
     if (tracker) {
       const total = tracker.getTotal();

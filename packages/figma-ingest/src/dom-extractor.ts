@@ -265,3 +265,16 @@ export async function extractFromHtml(htmlString: string): Promise<ExtractionRes
 
   return { meta, components, qualityScore };
 }
+
+/** 입력 HTML을 렌더해 전체 페이지 PNG Buffer 반환 (사람 검수용 아티팩트). */
+export async function captureInputScreenshot(htmlString: string): Promise<Buffer> {
+  const br = await getBrowser();
+  const page = await br.newPage();
+  try {
+    await page.setViewport({ width: 1100, height: 800 });
+    await page.setContent(htmlString, { waitUntil: 'load' });
+    return Buffer.from(await page.screenshot({ fullPage: true, type: 'png' }));
+  } finally {
+    await page.close();
+  }
+}
