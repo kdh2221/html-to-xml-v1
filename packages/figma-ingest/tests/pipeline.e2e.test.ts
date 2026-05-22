@@ -108,11 +108,12 @@ describe('pipeline.convertHtmlToWebSquare with Stage 3 (Mock LLM)', () => {
     expect(xml).not.toContain('id="col_1"');
   }, 60000);
 
-  it('master-detail: grid 바인딩 O, submission 생략 (DataMap 없음)', async () => {
+  it('master-detail: grid 바인딩 O, sbm_search 없음 (DataMap 없음)', async () => {
     const html = fs.readFileSync(path.join(FIX_DIR, 'master-detail.html'), 'utf-8');
     const xml = await convertHtmlToWebSquare(html, { llmClient: makeMock('master-detail') });
     expect(xml).toMatch(/<w2:gridView[^>]*dataList="data:dlt_memberBasic"/);
-    expect(xml).not.toContain('<xf:submission');
+    // DataMap 없음 → 조회 submission(sbm_search) 없음. (저장 submission sbm_save는 2C-3에서 추가됨)
+    expect(xml).not.toContain('id="sbm_search"');
   }, 60000);
 
   it('simple-form: 검색영역이 표준 schbox 구조 (Phase 2C-0)', async () => {
