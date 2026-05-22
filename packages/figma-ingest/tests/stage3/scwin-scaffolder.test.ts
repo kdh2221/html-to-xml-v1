@@ -265,3 +265,30 @@ describe('buildSaveHandlers', () => {
     expect(out).not.toContain('submitdone');
   });
 });
+
+describe('scaffoldScwinHandlers — 저장 흐름 통합 (2C-3)', () => {
+  const MD = `<root>
+  <xf:submission id="sbm_save"/>
+  <script type="text/javascript" lazy="false"><![CDATA[
+scwin.onpageload = function() {
+};
+]]></script>
+  <xf:group class="tblbox" id="grp_detail"><xf:input id="ibx_empCdDetail" ref="data:dlt_memberBasic.EMP_CD" mandatory="true" label="사번"/></xf:group>
+  <w2:gridView id="grd_005" dataList="data:dlt_memberBasic"></w2:gridView>
+  <xf:trigger id="btn_013" class="btn_cm pt"><xf:label><![CDATA[저장]]></xf:label></xf:trigger>
+  <xf:trigger id="btn_014" class="btn_cm"><xf:label><![CDATA[취소]]></xf:label></xf:trigger>
+</root>`;
+
+  it('master-detail형: 저장(validateGroup) + 취소 + submitdone + ev:onclick', () => {
+    const out = scaffoldScwinHandlers(MD);
+    expect(out).toContain('scwin.btn_013_onclick = async function() {');
+    expect(out).toContain('$c.data.validateGroup(grp_detail)');
+    expect(out).toContain('$c.sbm.execute(sbm_save);');
+    expect(out).toContain('scwin.btn_014_onclick = function() {\n\t$c.data.undoGridView(grd_005);\n};');
+    expect(out).toContain('scwin.sbm_save_submitdone = function(e) {');
+    expect(out).toMatch(/id="btn_013"[^>]*ev:onclick="scwin.btn_013_onclick"/);
+    expect(out).toMatch(/id="btn_014"[^>]*ev:onclick="scwin.btn_014_onclick"/);
+    expect(out).toContain('$c.util.setGridViewDelCheckBox([grd_005]);');
+    expect(out).not.toMatch(/scwin\.onpageload = function\(\) \{\s*\};/);
+  });
+});

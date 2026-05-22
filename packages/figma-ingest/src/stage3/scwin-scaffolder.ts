@@ -195,24 +195,28 @@ export function buildSaveHandlers(d: SaveDetections): string {
 }
 
 /**
- * 최종 XML에 조회 흐름 scwin 핸들러를 스캐폴딩.
- * sbm_search·바인딩 grid 둘 다 없으면 no-op(빈 onpageload 유지).
- *
- * no-op 판정은 submission/grid만 본다. 조회버튼·tbl_search 컨테이너만 있고
- * 실행 대상(sbm)·결과 대상(grid)이 없으면 생성할 핸들러가 없으므로 스캐폴딩 안 함.
+ * 최종 XML에 조회 흐름 + 저장 흐름 scwin 핸들러를 스캐폴딩.
+ * 조회(sbm_search/grid)·저장(sbm_save) 어느 것도 없으면 no-op(빈 onpageload 유지).
  */
 export function scaffoldScwinHandlers(xml: string): string {
   const hasSubmission = detectSubmission(xml);
   const boundGrid = detectBoundGrid(xml);
-  if (!hasSubmission && !boundGrid) return xml; // no-op (Phase 0+1 회귀)
+  const hasSaveSubmission = detectSaveSubmission(xml);
+  if (!hasSubmission && !boundGrid && !hasSaveSubmission) return xml; // no-op (Phase 0+1 회귀)
 
   const searchBtn = detectSearchButton(xml);
   const container = detectSearchContainer(xml);
-  const script = buildHandlerScript({ searchBtn, boundGrid, hasSubmission, container });
+  const saveBtn = detectSaveButton(xml);
+  const cancelBtn = detectCancelButton(xml);
+  const detailGroup = detectDetailGroup(xml);
 
-  let out = replaceOnpageload(xml, script);
-  if (searchBtn && hasSubmission) {
-    out = injectButtonOnclick(out, searchBtn.id);
-  }
+  const queryScript = buildHandlerScript({ searchBtn, boundGrid, hasSubmission, container });
+  const saveScript = buildSaveHandlers({ saveBtn, cancelBtn, hasSaveSubmission, detailGroup, boundGrid });
+  const fullScript = saveScript ? `${queryScript}\n${saveScript}` : queryScript;
+
+  let out = replaceOnpageload(xml, fullScript);
+  if (searchBtn && hasSubmission) out = injectButtonOnclick(out, searchBtn.id);
+  if (saveBtn && hasSaveSubmission && boundGrid) out = injectButtonOnclick(out, saveBtn.id);
+  if (cancelBtn && boundGrid) out = injectButtonOnclick(out, cancelBtn.id);
   return out;
 }
