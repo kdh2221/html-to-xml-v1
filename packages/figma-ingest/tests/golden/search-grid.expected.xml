@@ -21,6 +21,8 @@
 		</w2:dataCollection>
 			<!-- TODO: [서버 확인] action URL("/TODO_VERIFY") 확인 필요 -->
 			<xf:submission id="sbm_search" ref="data:json,dma_search" target="data:json,dlt_orderList" action="/TODO_VERIFY" method="post" mediatype="application/json" ev:submitdone="scwin.sbm_search_submitdone"/>
+			<!-- TODO: [서버 확인] action URL("/TODO_VERIFY") 확인 필요 -->
+			<xf:submission id="sbm_save" ref="data:json,dlt_orderList" target="data:json,dlt_orderList" action="/TODO_VERIFY" method="post" mediatype="application/json" ev:submitdone="scwin.sbm_save_submitdone"/>
 		</xf:model>
 		<script type="text/javascript" lazy="false"><![CDATA[
 scwin.onpageload = function() {
@@ -32,6 +34,17 @@ scwin.btn_006_onclick = function() {
 	$c.sbm.execute(sbm_search);
 };
 scwin.sbm_search_submitdone = function(e) {
+};
+scwin.btn_009_onclick = async function() {
+	if ($c.data.isModified(dlt_orderList)) {
+		if (await $c.win.confirm($c.data.getMessage("MSG_CM_00031"))) {
+			$c.sbm.execute(sbm_save);
+		}
+	} else {
+		await $c.win.alert($c.data.getMessage("MSG_CM_00032"));
+	}
+};
+scwin.sbm_save_submitdone = function(e) {
 };
 ]]></script>
 	</head>
@@ -93,7 +106,7 @@ scwin.sbm_search_submitdone = function(e) {
 			<xf:group id="" class="btnbox">
 				<xf:group id="" class="lt">
 					<xf:trigger ctype="Button" style="" id="btn_008" tabIndex="1" type="button" hierarchy="btn_008" orgid="btn_008" class="btn_cm download"><xf:label><![CDATA[엑셀 다운로드]]></xf:label></xf:trigger>
-					<xf:trigger ctype="Button" style="" id="btn_009" tabIndex="1" type="button" hierarchy="btn_009" orgid="btn_009" class="btn_cm pt"><xf:label><![CDATA[저장]]></xf:label></xf:trigger>
+					<xf:trigger ctype="Button" style="" id="btn_009" tabIndex="1" type="button" hierarchy="btn_009" orgid="btn_009" class="btn_cm pt" ev:onclick="scwin.btn_009_onclick"><xf:label><![CDATA[저장]]></xf:label></xf:trigger>
 				</xf:group>
 				<xf:group id="" class="rt">
 				</xf:group>

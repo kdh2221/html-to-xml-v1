@@ -168,4 +168,34 @@ describe('pipeline.convertHtmlToWebSquare with Stage 3 (Mock LLM)', () => {
     expect(xml).toMatch(/id="ibx_orderNo"[^>]*ref="data:dma_search\.ORDER_NO"/);
     expect(xml).not.toMatch(/id="ibx_orderNo"[^>]*ref="data:dlt_/);
   }, 60000);
+
+  it('master-detail: 저장 흐름 (sbm_save + validateGroup + 키 mandatory + 취소) (Phase 2C-3)', async () => {
+    const html = fs.readFileSync(path.join(FIX_DIR, 'master-detail.html'), 'utf-8');
+    const xml = await convertHtmlToWebSquare(html, { llmClient: makeMock('master-detail') });
+    expect(xml).toContain('<xf:submission id="sbm_save"');
+    expect(xml).toMatch(/_onclick = async function\(\) \{[\s\S]*\$c\.data\.validateGroup\(grp_detail\)/);
+    expect(xml).toContain('$c.sbm.execute(sbm_save);');
+    expect(xml).toContain('$c.data.undoGridView(grd_005)');
+    expect(xml).toContain('scwin.sbm_save_submitdone');
+    expect(xml).toContain('MSG_CM_00031');
+    expect(xml).toContain('MSG_CM_00032');
+    expect(xml).toContain('<xf:group class="tblbox" id="grp_detail"');
+    expect(xml).toMatch(/id="ibx_empCdDetail"[^>]*mandatory="true"/);
+  }, 60000);
+
+  it('search-grid: sbm_save + 저장(validateGroup 생략); 취소 없음 (Phase 2C-3)', async () => {
+    const html = fs.readFileSync(path.join(FIX_DIR, 'search-grid.html'), 'utf-8');
+    const xml = await convertHtmlToWebSquare(html, { llmClient: makeMock('search-grid') });
+    expect(xml).toContain('<xf:submission id="sbm_save"');
+    expect(xml).toContain('$c.sbm.execute(sbm_save);');
+    expect(xml).not.toContain('validateGroup');
+    expect(xml).not.toContain('undoGridView');
+  }, 60000);
+
+  it('simple-form: 저장 흐름 없음 (Phase 2C-3 회귀)', async () => {
+    const html = fs.readFileSync(path.join(FIX_DIR, 'simple-form.html'), 'utf-8');
+    const xml = await convertHtmlToWebSquare(html, { llmClient: makeMock('simple-form') });
+    expect(xml).not.toContain('sbm_save');
+    expect(xml).not.toContain('grp_detail');
+  }, 60000);
 });

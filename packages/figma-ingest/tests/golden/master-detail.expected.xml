@@ -13,11 +13,29 @@
 				</w2:columnInfo>
 			</w2:dataList>
 		</w2:dataCollection>
+			<!-- TODO: [서버 확인] action URL("/TODO_VERIFY") 확인 필요 -->
+			<xf:submission id="sbm_save" ref="data:json,dlt_memberBasic" target="data:json,dlt_memberBasic" action="/TODO_VERIFY" method="post" mediatype="application/json" ev:submitdone="scwin.sbm_save_submitdone"/>
 		</xf:model>
 		<script type="text/javascript" lazy="false"><![CDATA[
 scwin.onpageload = function() {
 	$c.util.setGridViewDelCheckBox([grd_005]);
 	$c.data.setChangeCheckedDc([dlt_memberBasic]);
+};
+scwin.btn_013_onclick = async function() {
+	if ($c.data.isModified(dlt_memberBasic)) {
+		if ($c.data.validateGroup(grp_detail)) {
+			if (await $c.win.confirm($c.data.getMessage("MSG_CM_00031"))) {
+				$c.sbm.execute(sbm_save);
+			}
+		}
+	} else {
+		await $c.win.alert($c.data.getMessage("MSG_CM_00032"));
+	}
+};
+scwin.btn_014_onclick = function() {
+	$c.data.undoGridView(grd_005);
+};
+scwin.sbm_save_submitdone = function(e) {
 };
 ]]></script>
 	</head>
@@ -65,7 +83,7 @@ scwin.onpageload = function() {
 					</w2:gBody>
 				</w2:gridView>
 			</xf:group>
-			<xf:group class="tblbox" id="" meta_snippetCategory="05_입출력테이블" meta_snippetKeyComponent="true" meta_snippetName="5_02 테이블(2단)"
+			<xf:group class="tblbox" id="grp_detail" meta_snippetCategory="05_입출력테이블" meta_snippetKeyComponent="true" meta_snippetName="5_02 테이블(2단)"
 				style="">
 				<xf:group class="w2tb tbl" id="" style="" tagname="table">
 					<w2:attributes>
@@ -84,7 +102,7 @@ scwin.onpageload = function() {
 							<w2:textbox ctype="Text" style="" id="tbx_007" label="사번" tabIndex="1" class="" hierarchy="tbx_007" orgid="tbx_007"/>
 						</xf:group>
 						<xf:group class="w2tb_td" style="" tagname="td">
-							<xf:input ctype="Edit" style="width:177px;" id="ibx_empCdDetail" ref="data:dlt_memberBasic.EMP_CD" label="사번" tabIndex="1" class="" hierarchy="ibx_empCdDetail" orgid="ibx_empCdDetail"/>
+							<xf:input ctype="Edit" style="width:177px;" id="ibx_empCdDetail" ref="data:dlt_memberBasic.EMP_CD" mandatory="true" label="사번" tabIndex="1" class="" hierarchy="ibx_empCdDetail" orgid="ibx_empCdDetail"/>
 						</xf:group>
 						<xf:group class="w2tb_th" style="" tagname="th">
 							<w2:textbox ctype="Text" style="" id="tbx_009" label="성명" tabIndex="1" class="" hierarchy="tbx_009" orgid="tbx_009"/>
@@ -103,8 +121,8 @@ scwin.onpageload = function() {
 			</xf:group>
 			<xf:group id="" class="btnbox">
 				<xf:group id="" class="lt">
-					<xf:trigger ctype="Button" style="" id="btn_013" tabIndex="1" type="button" hierarchy="btn_013" orgid="btn_013" class="btn_cm pt"><xf:label><![CDATA[저장]]></xf:label></xf:trigger>
-					<xf:trigger ctype="Button" style="" id="btn_014" tabIndex="1" type="button" hierarchy="btn_014" orgid="btn_014" class="btn_cm"><xf:label><![CDATA[취소]]></xf:label></xf:trigger>
+					<xf:trigger ctype="Button" style="" id="btn_013" tabIndex="1" type="button" hierarchy="btn_013" orgid="btn_013" class="btn_cm pt" ev:onclick="scwin.btn_013_onclick"><xf:label><![CDATA[저장]]></xf:label></xf:trigger>
+					<xf:trigger ctype="Button" style="" id="btn_014" tabIndex="1" type="button" hierarchy="btn_014" orgid="btn_014" class="btn_cm" ev:onclick="scwin.btn_014_onclick"><xf:label><![CDATA[취소]]></xf:label></xf:trigger>
 				</xf:group>
 				<xf:group id="" class="rt">
 				</xf:group>
