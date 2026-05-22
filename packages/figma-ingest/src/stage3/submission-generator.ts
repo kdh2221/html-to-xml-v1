@@ -8,12 +8,16 @@
  */
 import type { DataCollectionIR } from '../types';
 
-const SAVE_LABEL = /저장/;
+// 저장 버튼 탐지는 라벨(CDATA) 정확 일치 — scwin-scaffolder.detectButtonByLabel과 동일 기준.
+// (substring 매칭이면 "임시저장" 등이 sbm_save만 만들고 핸들러는 안 생겨 orphan submission이 됨)
 
-/** xml에 라벨 '저장' trigger가 있으면 true. */
+/** xml에 라벨(CDATA)이 정확히 '저장'인 trigger가 있으면 true. */
 function hasSaveButton(xml: string): boolean {
   const triggers = xml.match(/<xf:trigger\b[\s\S]*?<\/xf:trigger>/g) || [];
-  return triggers.some(t => SAVE_LABEL.test(t));
+  return triggers.some(t => {
+    const lblM = t.match(/<xf:label>\s*<!\[CDATA\[([^\]]*)\]\]>\s*<\/xf:label>/);
+    return lblM != null && lblM[1].trim() === '저장';
+  });
 }
 
 export function generateSubmissions(xml: string, ir: DataCollectionIR): string {
