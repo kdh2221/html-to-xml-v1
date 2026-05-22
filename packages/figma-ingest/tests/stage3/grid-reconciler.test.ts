@@ -63,3 +63,44 @@ describe('reconcileGrids', () => {
     expect(out).toContain('dataList="data:dlt_existing"');
   });
 });
+
+describe('reconcileGrids — sourceBodyId/chk-aware (#9, Phase 3A)', () => {
+  it('chk 선행 컬럼: chk 보존 + 데이터 컬럼 id 기반 매칭(밀림 없음)', () => {
+    const ir = {
+      dataMaps: [],
+      dataLists: [{ id: 'dlt_a', name: 'A', columns: [
+        { id: 'EMP_CD', name: '사번', dataType: 'text' as const, sourceBodyId: 'col_1' },
+        { id: 'EMP_NM', name: '성명', dataType: 'text' as const, sourceBodyId: 'col_2' },
+      ] }],
+      confidence: 0.9,
+    };
+    const xml = `<w2:gridView id="grd_a">
+      <w2:header><w2:row><w2:column id="chk"/><w2:column id="col_1"/><w2:column id="col_2"/></w2:row></w2:header>
+      <w2:gBody><w2:row><w2:column id="chk"/><w2:column id="col_1"/><w2:column id="col_2"/></w2:row></w2:gBody>
+    </w2:gridView>`;
+    const out = reconcileGrids(xml, ir);
+    expect(out).toContain('<w2:column id="chk"/>');
+    expect(out).toContain('<w2:column id="EMP_CD"/>');
+    expect(out).toContain('<w2:column id="EMP_NM"/>');
+    const cols = [...out.matchAll(/<w2:column id="([^"]+)"/g)].map(m => m[1]);
+    expect(cols).toEqual(['chk', 'EMP_CD', 'EMP_NM', 'chk', 'EMP_CD', 'EMP_NM']);
+  });
+
+  it('sourceBodyId 없는 IR → 위치순 fallback (기존 동작)', () => {
+    const ir = {
+      dataMaps: [],
+      dataLists: [{ id: 'dlt_a', name: 'A', columns: [
+        { id: 'EMP_CD', name: '사번', dataType: 'text' as const },
+        { id: 'EMP_NM', name: '성명', dataType: 'text' as const },
+      ] }],
+      confidence: 0.9,
+    };
+    const xml = `<w2:gridView id="grd_a">
+      <w2:header><w2:row><w2:column id="x"/><w2:column id="y"/></w2:row></w2:header>
+      <w2:gBody><w2:row><w2:column id="x"/><w2:column id="y"/></w2:row></w2:gBody>
+    </w2:gridView>`;
+    const out = reconcileGrids(xml, ir);
+    const cols = [...out.matchAll(/<w2:column id="([^"]+)"/g)].map(m => m[1]);
+    expect(cols).toEqual(['EMP_CD', 'EMP_NM', 'EMP_CD', 'EMP_NM']);
+  });
+});
