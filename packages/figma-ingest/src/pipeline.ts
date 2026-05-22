@@ -23,6 +23,7 @@ import { bindDataCollection } from './stage3/data-binder';
 import { normalizeSchbox } from './stage3/schbox-normalizer';
 import { scaffoldScwinHandlers } from './stage3/scwin-scaffolder';
 import { validateAntiPatterns } from './validate/anti-pattern-validator';
+import { computePreservation } from './validate/preservation-report';
 import { fixAsyncAwait } from './validate/anti-pattern-fixer';
 import type { LLMClientLike } from './stage3/llm-mock';
 import type { ExtractionResult } from './types';
@@ -76,6 +77,7 @@ export async function convertHtmlToWebSquare(
   result = fixAsyncAwait(result);   // #2 안전 자동수정
 
   options.onStage?.('validation', validateAntiPatterns(result));
+  options.onStage?.('preservation', computePreservation(extraction, result));
   options.onStage?.('phase1-finalized', result);
 
   return result;

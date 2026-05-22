@@ -209,4 +209,18 @@ describe('pipeline.convertHtmlToWebSquare with Stage 3 (Mock LLM)', () => {
     expect(violations).not.toBeNull();
     expect((violations as unknown as Array<{ severity: string }>).filter(v => v.severity === 'critical')).toEqual([]);
   }, 60000);
+
+  for (const pname of ['simple-form', 'search-grid', 'master-detail']) {
+    it(`${pname}: 변환 보존율 1.0 — field/button/gridColumn 유실 0 (Phase 4)`, async () => {
+      const html = fs.readFileSync(path.join(FIX_DIR, `${pname}.html`), 'utf-8');
+      let report: { rate: number; lost: unknown[] } | null = null;
+      await convertHtmlToWebSquare(html, {
+        llmClient: makeMock(pname),
+        onStage: (n, p) => { if (n === 'preservation') report = p as { rate: number; lost: unknown[] }; },
+      });
+      expect(report).not.toBeNull();
+      expect((report as unknown as { lost: unknown[] }).lost).toEqual([]);
+      expect((report as unknown as { rate: number }).rate).toBe(1);
+    }, 60000);
+  }
 });

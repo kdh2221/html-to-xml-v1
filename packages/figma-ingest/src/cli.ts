@@ -6,6 +6,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { convertHtmlToWebSquare } from './pipeline';
 import { validateAntiPatterns } from './validate/anti-pattern-validator';
+import type { PreservationReport } from './validate/preservation-report';
 import { closeBrowser } from './dom-extractor';
 import { LLMClient } from './stage3/llm-client';
 import { CostTracker } from './stage3/cost-tracker';
@@ -46,9 +47,21 @@ async function main() {
   }
 
   try {
-    const xml = await convertHtmlToWebSquare(html, { adaptive, noLlm, llmClient });
+    let preservation: PreservationReport | null = null;
+    const xml = await convertHtmlToWebSquare(html, {
+      adaptive, noLlm, llmClient,
+      onStage: (n, p) => { if (n === 'preservation') preservation = p as PreservationReport; },
+    });
     fs.writeFileSync(absOutput, xml, 'utf-8');
     console.log(`OK Wrote ${xml.length} chars`);
+    if (preservation) {
+      const r = preservation as PreservationReport;
+      console.log(`📐 보존율 ${(r.rate * 100).toFixed(1)}% (${r.preserved}/${r.total})`);
+      if (r.lost.length) {
+        console.warn(`⚠️  유실 ${r.lost.length}건:`);
+        for (const l of r.lost) console.warn(`  [${l.family}] ${l.label}`);
+      }
+    }
     const violations = validateAntiPatterns(xml);
     if (violations.length) {
       const crit = violations.filter(v => v.severity === 'critical').length;
