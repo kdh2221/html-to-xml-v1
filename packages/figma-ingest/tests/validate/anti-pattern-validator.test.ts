@@ -136,10 +136,10 @@ import * as path from 'path';
 describe('골든 검증 (파이프라인 출력 정합성)', () => {
   const GOLDEN = path.join(__dirname, '..', 'golden');
   for (const name of ['simple-form', 'search-grid', 'master-detail']) {
-    it(`${name} 골든 → critical 위반 0`, () => {
+    it(`${name} 골든 → 위반 0 (critical·warning 전부)`, () => {
       const xml = fs.readFileSync(path.join(GOLDEN, `${name}.expected.xml`), 'utf-8');
-      const critical = validateAntiPatterns(xml).filter(v => v.severity === 'critical');
-      expect(critical).toEqual([]);
+      // 0-total: 깨끗한 파이프라인 출력엔 경고성 위반도 없어야 함(false-positive 회귀 가드)
+      expect(validateAntiPatterns(xml)).toEqual([]);
     });
   }
 });
