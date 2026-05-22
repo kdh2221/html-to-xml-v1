@@ -50,3 +50,82 @@ describe('checkSubmissionRefs (#10)', () => {
     expect(checkSubmissionRefs(xml)).toEqual([]);
   });
 });
+
+import { checkAsyncAwait, checkForbiddenApi, checkDirectDialog, checkEventNames, checkHeaderInputType, checkCancelReform, validateAntiPatterns } from '../../src/validate/anti-pattern-validator';
+
+const script = (body: string) => `<script type="text/javascript" lazy="false"><![CDATA[\n${body}\n]]></script>`;
+
+describe('checkAsyncAwait (#2)', () => {
+  it('async 없이 await → critical', () => {
+    const xml = script(`scwin.btn_x_onclick = function() {\n\tawait $c.win.confirm("x");\n};`);
+    const v = checkAsyncAwait(xml);
+    expect(v).toHaveLength(1);
+    expect(v[0].rule).toBe('ANTI-02');
+    expect(v[0].location).toBe('btn_x_onclick');
+  });
+  it('async function with await → 위반 없음', () => {
+    expect(checkAsyncAwait(script(`scwin.btn_x_onclick = async function() {\n\tawait $c.win.confirm("x");\n};`))).toEqual([]);
+  });
+  it('await 없는 function → 위반 없음', () => {
+    expect(checkAsyncAwait(script(`scwin.onpageload = function() {\n\t$c.util.x();\n};`))).toEqual([]);
+  });
+});
+
+describe('checkForbiddenApi (#1)', () => {
+  it('document.getElementById → warning', () => {
+    expect(checkForbiddenApi(script(`var a = document.getElementById("x");`))[0].rule).toBe('ANTI-01');
+  });
+  it('정상 script → 없음', () => {
+    expect(checkForbiddenApi(script(`$c.util.getComponent("x");`))).toEqual([]);
+  });
+});
+
+describe('checkDirectDialog (#3)', () => {
+  it('bare confirm( → warning', () => {
+    expect(checkDirectDialog(script(`if (confirm("x")) {}`))[0].rule).toBe('ANTI-03');
+  });
+  it('$c.win.confirm은 정상', () => {
+    expect(checkDirectDialog(script(`await $c.win.confirm("x");`))).toEqual([]);
+  });
+});
+
+describe('checkEventNames (#4)', () => {
+  it('허용 외 ev:onrowclick → warning', () => {
+    expect(checkEventNames(`<xf:trigger ev:onrowclick="x"/>`)[0].rule).toBe('ANTI-04');
+  });
+  it('허용 이벤트(onclick/onpageload/submitdone) → 없음', () => {
+    expect(checkEventNames(`<a ev:onclick="x"/><b ev:onpageload="y"/><c ev:submitdone="z"/>`)).toEqual([]);
+  });
+});
+
+describe('checkHeaderInputType (#11)', () => {
+  it('header inputType=calendar → warning', () => {
+    const xml = `<w2:gridView><w2:header><w2:row><w2:column inputType="calendar" id="A"/></w2:row></w2:header></w2:gridView>`;
+    expect(checkHeaderInputType(xml)[0].rule).toBe('ANTI-11');
+  });
+  it('text/checkbox → 없음', () => {
+    const xml = `<w2:gridView><w2:header><w2:row><w2:column inputType="text" id="A"/><w2:column inputType="checkbox" id="chk"/></w2:row></w2:header></w2:gridView>`;
+    expect(checkHeaderInputType(xml)).toEqual([]);
+  });
+});
+
+describe('checkCancelReform (#15)', () => {
+  it('.reform( → warning', () => {
+    expect(checkCancelReform(script(`dlt_x.reform();`))[0].rule).toBe('ANTI-15');
+  });
+  it('undoGridView → 없음', () => {
+    expect(checkCancelReform(script(`$c.data.undoGridView(grd_x);`))).toEqual([]);
+  });
+});
+
+describe('validateAntiPatterns (합산)', () => {
+  it('깨끗한 XML → 빈 배열', () => {
+    expect(validateAntiPatterns(`<root><xf:input id="ibx_a"/></root>`)).toEqual([]);
+  });
+  it('여러 위반 합산', () => {
+    const xml = `<root><xf:input id="dup"/><xf:input id="dup"/>${script(`dlt_x.reform();`)}</root>`;
+    const rules = validateAntiPatterns(xml).map(v => v.rule).sort();
+    expect(rules).toContain('ANTI-08');
+    expect(rules).toContain('ANTI-15');
+  });
+});

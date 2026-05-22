@@ -103,3 +103,118 @@ export function checkSubmissionRefs(xml: string): Violation[] {
   });
   return out;
 }
+
+/** <script> CDATA 본문들을 합쳐 반환 (script 룰 입력). */
+function scriptBodies(xml: string): string {
+  return (xml.match(/<script\b[^>]*>[\s\S]*?<\/script>/g) || []).join('\n');
+}
+
+/** #2: scwin 핸들러가 await 사용하나 async 없음 (SyntaxError). 핸들러는 `\n};`로 끝나는 형식 가정. */
+export function checkAsyncAwait(xml: string): Violation[] {
+  const s = scriptBodies(xml);
+  const out: Violation[] = [];
+  const re = /scwin\.(\w+)\s*=\s*(async\s+)?function\b[^{]*\{([\s\S]*?)\n\};/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(s)) !== null) {
+    if (!m[2] && /\bawait\b/.test(m[3])) {
+      out.push({ rule: 'ANTI-02', severity: 'critical',
+        message: `scwin.${m[1]}: await 사용하나 async 선언 없음 (SyntaxError)`,
+        remediation: 'await가 있으면 함수에 async: scwin.fn = async function() {...}', location: m[1] });
+    }
+  }
+  return out;
+}
+
+/** #1: 금지 프레임워크/브라우저 API. */
+export function checkForbiddenApi(xml: string): Violation[] {
+  const s = scriptBodies(xml);
+  const out: Violation[] = [];
+  const pats: Array<[RegExp, string]> = [
+    [/\$p\.getComponentById\s*\(/, '$p.getComponentById'],
+    [/document\.(?:getElementById|querySelector)\s*\(/, 'document.*'],
+    [/\baddEventListener\s*\(/, 'addEventListener'],
+  ];
+  for (const [re, label] of pats) {
+    if (re.test(s)) out.push({ rule: 'ANTI-01', severity: 'warning',
+      message: `금지된 프레임워크/브라우저 API: ${label}`,
+      remediation: '$c.util.getComponent(...) / ev: 속성 이벤트 사용 (브라우저 전역 API 금지)', location: label });
+  }
+  return out;
+}
+
+/** #3: $c.win. 접두 없는 bare confirm(/alert(. */
+export function checkDirectDialog(xml: string): Violation[] {
+  const s = scriptBodies(xml);
+  const out: Violation[] = [];
+  const re = /(?:^|[^.\w])(confirm|alert)\s*\(/g;
+  const seen = new Set<string>();
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(s)) !== null) {
+    if (seen.has(m[1])) continue;
+    seen.add(m[1]);
+    out.push({ rule: 'ANTI-03', severity: 'warning',
+      message: `브라우저 내장 ${m[1]}() 직접 호출`,
+      remediation: 'await $c.win.confirm/alert($c.data.getMessage("MSG_CM_*")) 사용', location: m[1] });
+  }
+  return out;
+}
+
+const ALLOWED_EV = new Set(['onclick', 'onpageload', 'submitdone', 'oncellclick', 'oncelldblclick', 'onrowindexchange', 'ontabindexchange', 'onviewchange']);
+/** #4: 허용목록 외 ev: 이벤트. */
+export function checkEventNames(xml: string): Violation[] {
+  const out: Violation[] = [];
+  const re = /\bev:([a-zA-Z]+)\s*=/g;
+  const seen = new Set<string>();
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(xml)) !== null) {
+    const name = m[1].toLowerCase();
+    if (ALLOWED_EV.has(name) || seen.has(name)) continue;
+    seen.add(name);
+    out.push({ rule: 'ANTI-04', severity: 'warning',
+      message: `허용되지 않은 ev: 이벤트 "ev:${m[1]}"`,
+      remediation: '정확한 이벤트명만 (oncellclick/onrowindexchange/ontabindexchange 등). onrowclick/onclose 환각 금지', location: m[1] });
+  }
+  return out;
+}
+
+/** #11: gridView header column inputType은 text/checkbox만. */
+export function checkHeaderInputType(xml: string): Violation[] {
+  const $ = cheerio.load(xml, { xmlMode: true });
+  const out: Violation[] = [];
+  byTag($, null, 'w2:header').each((_, header) => {
+    byTag($, $(header), 'w2:column').each((_2, col) => {
+      const it = $(col).attr('inputType');
+      if (it && it !== 'text' && it !== 'checkbox') {
+        out.push({ rule: 'ANTI-11', severity: 'warning',
+          message: `GridView header column inputType="${it}" (text/checkbox만 허용)`,
+          remediation: 'header column inputType은 text 또는 checkbox만', location: it });
+      }
+    });
+  });
+  return out;
+}
+
+/** #15: script에 .reform( (취소엔 undoGridView). */
+export function checkCancelReform(xml: string): Violation[] {
+  if (/\.reform\s*\(/.test(scriptBodies(xml))) {
+    return [{ rule: 'ANTI-15', severity: 'warning',
+      message: 'script에서 .reform() 사용 (취소/원복엔 부적합)',
+      remediation: '취소·변경 원복에는 $c.data.undoGridView(grdObj). reform()은 서버 재조회 전 dirty 제거용만', location: 'reform' }];
+  }
+  return [];
+}
+
+/** 9개 룰 합산. */
+export function validateAntiPatterns(xml: string): Violation[] {
+  return [
+    ...checkDuplicateIds(xml),
+    ...checkGridColumns(xml),
+    ...checkSubmissionRefs(xml),
+    ...checkAsyncAwait(xml),
+    ...checkForbiddenApi(xml),
+    ...checkDirectDialog(xml),
+    ...checkEventNames(xml),
+    ...checkHeaderInputType(xml),
+    ...checkCancelReform(xml),
+  ];
+}
