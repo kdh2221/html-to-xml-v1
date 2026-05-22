@@ -199,3 +199,69 @@ scwin.onpageload = function() {
     expect(scaffoldScwinHandlers(xml)).toBe(xml);
   });
 });
+
+import { detectSaveButton, detectCancelButton, detectSaveSubmission, detectDetailGroup, buildSaveHandlers } from '../../src/stage3/scwin-scaffolder';
+
+describe('save-flow detectors', () => {
+  const XML = `<root>
+    <xf:submission id="sbm_save"/>
+    <xf:group class="tblbox" id="grp_detail"></xf:group>
+    <xf:trigger id="btn_013" class="btn_cm pt"><xf:label><![CDATA[저장]]></xf:label></xf:trigger>
+    <xf:trigger id="btn_014" class="btn_cm"><xf:label><![CDATA[취소]]></xf:label></xf:trigger>
+  </root>`;
+  it('detectSaveButton: 라벨 저장 trigger id', () => {
+    expect(detectSaveButton(XML)).toEqual({ id: 'btn_013' });
+  });
+  it('detectCancelButton: 라벨 취소 trigger id', () => {
+    expect(detectCancelButton(XML)).toEqual({ id: 'btn_014' });
+  });
+  it('detectSaveSubmission / detectDetailGroup', () => {
+    expect(detectSaveSubmission(XML)).toBe(true);
+    expect(detectDetailGroup(XML)).toBe('grp_detail');
+    expect(detectSaveSubmission('<root></root>')).toBe(false);
+    expect(detectDetailGroup('<root></root>')).toBeNull();
+  });
+  it('저장 라벨 없으면 null', () => {
+    expect(detectSaveButton('<root><xf:trigger id="b"><xf:label><![CDATA[조회]]></xf:label></xf:trigger></root>')).toBeNull();
+  });
+});
+
+describe('buildSaveHandlers', () => {
+  const GRID = { gridId: 'grd_005', dltId: 'dlt_memberBasic' };
+  it('grp_detail 있을 때: validateGroup 포함 저장 + 취소 + submitdone', () => {
+    const out = buildSaveHandlers({
+      saveBtn: { id: 'btn_013' }, cancelBtn: { id: 'btn_014' },
+      hasSaveSubmission: true, detailGroup: 'grp_detail', boundGrid: GRID,
+    });
+    expect(out).toContain('scwin.btn_013_onclick = async function() {');
+    expect(out).toContain('if ($c.data.isModified(dlt_memberBasic)) {');
+    expect(out).toContain('if ($c.data.validateGroup(grp_detail)) {');
+    expect(out).toContain('if (await $c.win.confirm($c.data.getMessage("MSG_CM_00031"))) {');
+    expect(out).toContain('$c.sbm.execute(sbm_save);');
+    expect(out).toContain('await $c.win.alert($c.data.getMessage("MSG_CM_00032"));');
+    expect(out).toContain('scwin.btn_014_onclick = function() {\n\t$c.data.undoGridView(grd_005);\n};');
+    expect(out).toContain('scwin.sbm_save_submitdone = function(e) {\n};');
+  });
+
+  it('grp_detail 없을 때: validateGroup 생략', () => {
+    const out = buildSaveHandlers({
+      saveBtn: { id: 'btn_009' }, cancelBtn: null,
+      hasSaveSubmission: true, detailGroup: null, boundGrid: { gridId: 'grd_010', dltId: 'dlt_orderList' },
+    });
+    expect(out).toContain('scwin.btn_009_onclick = async function() {');
+    expect(out).toContain('if ($c.data.isModified(dlt_orderList)) {');
+    expect(out).not.toContain('validateGroup');
+    expect(out).toContain('$c.sbm.execute(sbm_save);');
+    expect(out).not.toContain('undoGridView');
+  });
+
+  it('저장버튼·sbm_save 없으면 저장 핸들러 없음 (취소만)', () => {
+    const out = buildSaveHandlers({
+      saveBtn: null, cancelBtn: { id: 'btn_x' },
+      hasSaveSubmission: false, detailGroup: null, boundGrid: GRID,
+    });
+    expect(out).not.toContain('_onclick = async');
+    expect(out).toContain('scwin.btn_x_onclick = function() {\n\t$c.data.undoGridView(grd_005);\n};');
+    expect(out).not.toContain('submitdone');
+  });
+});
