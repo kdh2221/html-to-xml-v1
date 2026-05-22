@@ -143,11 +143,12 @@ describe('pipeline.convertHtmlToWebSquare with Stage 3 (Mock LLM)', () => {
     expect(xml).toMatch(/<xf:trigger\b[^>]*class="btn_cm sch"[^>]*ev:onclick="scwin\.\w+_onclick"/);
   }, 60000);
 
-  it('master-detail: grid 호출만, sbm.execute 없음 (Phase 2C-1)', async () => {
+  it('master-detail: grid 호출 O, 조회 흐름(sbm_search) 없음 (Phase 2C-1)', async () => {
     const html = fs.readFileSync(path.join(FIX_DIR, 'master-detail.html'), 'utf-8');
     const xml = await convertHtmlToWebSquare(html, { llmClient: makeMock('master-detail') });
     expect(xml).toContain('$c.util.setGridViewDelCheckBox([');
-    expect(xml).not.toContain('$c.sbm.execute');
+    // DataMap 없음 → 조회 submission 실행/핸들러 없음. (저장 흐름 sbm_save는 2C-3에서 추가됨)
+    expect(xml).not.toContain('$c.sbm.execute(sbm_search)');
     expect(xml).not.toContain('sbm_search_submitdone');
   }, 60000);
 
