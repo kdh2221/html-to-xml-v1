@@ -89,7 +89,8 @@ function inputFieldLabels(e: ExtractionResult): string[] {
   return e.components.filter(c => FIELD_CTYPES.includes(c.ctype)).map(c => c.label);
 }
 function inputButtonLabels(e: ExtractionResult): string[] {
-  return e.components.filter(c => c.ctype === 'Button').map(c => c.label);
+  // Button·Trigger 둘 다 출력에선 xf:trigger로 렌더 → 입력 측도 동일 패밀리로 묶어 대칭 유지.
+  return e.components.filter(c => c.ctype === 'Button' || c.ctype === 'Trigger').map(c => c.label);
 }
 function inputGridColumnLabels(e: ExtractionResult): string[] {
   return e.components.filter(c => c.ctype === 'GridView').flatMap(c => (c.columns ?? []).map(col => col.label));
