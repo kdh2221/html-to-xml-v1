@@ -12,6 +12,7 @@
  *   - Stage 4 안티패턴 검증
  *   - Stage 5 시각 회귀
  */
+import { extractSourceCss, extractSourceScript } from './source-assets';
 import { extractFromHtml } from './dom-extractor';
 import { buildAbsoluteXml } from './absolute-xml-builder';
 import { convertAbsoluteToRelative, RelativeOptions } from './relative-converter';
@@ -44,6 +45,10 @@ export async function convertHtmlToWebSquare(
   // Stage 0: HTML → 컴포넌트 추출
   const extraction: ExtractionResult = await extractFromHtml(html);
   options.onStage?.('stage0-extraction', extraction);
+  options.onStage?.('source-assets', {
+    css: extractSourceCss(html),
+    js: extractSourceScript(html),
+  });
 
   // Stage 1: 컴포넌트 → ABSOLUTE XML
   const absoluteXml = buildAbsoluteXml(extraction.meta, extraction.components);

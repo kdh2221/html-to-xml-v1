@@ -7,6 +7,7 @@ import * as path from 'path';
 import { convertHtmlToWebSquare } from './pipeline';
 import { validateAntiPatterns } from './validate/anti-pattern-validator';
 import type { PreservationReport } from './validate/preservation-report';
+import { injectSourceReference } from './source-assets';
 import { closeBrowser, captureInputScreenshot } from './dom-extractor';
 import { LLMClient } from './stage3/llm-client';
 import { CostTracker } from './stage3/cost-tracker';
@@ -50,12 +51,35 @@ async function main() {
 
   try {
     let preservation: PreservationReport | null = null;
-    const xml = await convertHtmlToWebSquare(html, {
+    let sourceAssets: { css: string; js: string } = { css: '', js: '' };
+    let finalXml = await convertHtmlToWebSquare(html, {
       adaptive, noLlm, llmClient,
-      onStage: (n, p) => { if (n === 'preservation') preservation = p as PreservationReport; },
+      onStage: (n, p) => {
+        if (n === 'preservation') preservation = p as PreservationReport;
+        if (n === 'source-assets') sourceAssets = p as { css: string; js: string };
+      },
     });
-    fs.writeFileSync(absOutput, xml, 'utf-8');
-    console.log(`OK Wrote ${xml.length} chars`);
+
+    // 원본 CSS/JS 참조 사이드카 + XML 포인터 주석
+    const base = absOutput.replace(/\.xml$/i, '');
+    const baseName = path.basename(base);
+    const refs: { css?: string; js?: string } = {};
+    if (sourceAssets.css) {
+      const p = `${base}.source.css`;
+      fs.writeFileSync(p, sourceAssets.css, 'utf-8');
+      refs.css = `${baseName}.source.css`;
+      console.log(`🎨 원본 CSS 참조 저장: ${p}`);
+    }
+    if (sourceAssets.js) {
+      const p = `${base}.source.js`;
+      fs.writeFileSync(p, sourceAssets.js, 'utf-8');
+      refs.js = `${baseName}.source.js`;
+      console.log(`📜 원본 JS 참조 저장: ${p}`);
+    }
+    finalXml = injectSourceReference(finalXml, refs);
+
+    fs.writeFileSync(absOutput, finalXml, 'utf-8');
+    console.log(`OK Wrote ${finalXml.length} chars`);
     if (preservation) {
       const r = preservation as PreservationReport;
       console.log(`📐 보존율 ${(r.rate * 100).toFixed(1)}% (${r.preserved}/${r.total})`);
@@ -64,7 +88,7 @@ async function main() {
         for (const l of r.lost) console.warn(`  [${l.family}] ${l.label}`);
       }
     }
-    const violations = validateAntiPatterns(xml);
+    const violations = validateAntiPatterns(finalXml);
     if (violations.length) {
       const crit = violations.filter(v => v.severity === 'critical').length;
       console.warn(`\n⚠️  안티패턴 ${violations.length}건 (critical ${crit})`);

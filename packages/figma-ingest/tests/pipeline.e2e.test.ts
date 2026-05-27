@@ -199,6 +199,20 @@ describe('pipeline.convertHtmlToWebSquare with Stage 3 (Mock LLM)', () => {
     expect(xml).not.toContain('grp_detail');
   }, 60000);
 
+  it('파이프라인 onStage(source-assets) 발생 (Phase: source 보존)', async () => {
+    const html = fs.readFileSync(path.join(FIX_DIR, 'simple-form.html'), 'utf-8');
+    let assets: { css: string; js: string } | null = null;
+    await convertHtmlToWebSquare(html, {
+      llmClient: makeMock('simple-form'),
+      onStage: (n, p) => { if (n === 'source-assets') assets = p as { css: string; js: string }; },
+    });
+    expect(assets).not.toBeNull();
+    // simple-form fixture엔 <style> 있음 → css 비어있지 않음
+    expect((assets as unknown as { css: string }).css).not.toBe('');
+    // simple-form fixture엔 <script> 없음 → js ''
+    expect((assets as unknown as { js: string }).js).toBe('');
+  }, 60000);
+
   it('파이프라인 onStage(validation) 발생 + simple-form critical 0 (Phase 3A)', async () => {
     const html = fs.readFileSync(path.join(FIX_DIR, 'simple-form.html'), 'utf-8');
     let violations: Array<{ severity: string }> | null = null;
