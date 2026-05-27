@@ -1,0 +1,313 @@
+# 사용 매뉴얼 — Figma → WebSquare XML 변환 파이프라인
+
+이 문서는 도구를 **실제로 돌리고, 결과를 보고, 활용**하는 전 과정을 단계별로 설명합니다.
+(쉬운 개요는 [README.md](../README.md) 참고. 이 문서는 실사용 상세판입니다.)
+
+---
+
+## 목차
+1. [한눈에 보기](#1-한눈에-보기)
+2. [사전 준비](#2-사전-준비)
+3. [설치 & 빌드](#3-설치--빌드)
+4. [빠른 시작 (1분)](#4-빠른-시작-1분)
+5. [CLI 레퍼런스](#5-cli-레퍼런스)
+6. [두 가지 변환 모드 (LLM vs --no-llm)](#6-두-가지-변환-모드)
+7. [실행 출력(리포트) 읽는 법](#7-실행-출력리포트-읽는-법)
+8. [⭐ 출력 XML을 "화면"으로 보는 법](#8-출력-xml을-화면으로-보는-법)
+9. [입력 HTML 작성 가이드](#9-입력-html-작성-가이드)
+10. [프로그램(코드)에서 호출하기](#10-프로그램코드에서-호출하기)
+11. [테스트 & 골든](#11-테스트--골든)
+12. [문제 해결 (FAQ)](#12-문제-해결-faq)
+13. [부록: 파이프라인 단계 요약](#13-부록-파이프라인-단계-요약)
+
+---
+
+## 1. 한눈에 보기
+
+**입력**: Figma 디자인을 AI에 통과시켜 얻은 일반 HTML 파일 한 개.
+**출력**: WebSquare 생태계에서 바로 쓰는 XML 파일 한 개 (+ 검증 리포트).
+
+```
+input.html  ──[ figma-ingest CLI ]──▶  output.xml  (+ 보존율·안티패턴 리포트)
+```
+
+핵심: 단순 마크업 변환이 아니라 **DataCollection(데이터 상자) 추론 → ref 바인딩 → 표준 schbox 구조 → 조회/저장 동작(scwin) → 안티패턴 검증 → 보존율 검사**까지 자동 수행합니다.
+
+---
+
+## 2. 사전 준비
+
+| 항목 | 요구 | 확인 |
+|---|---|---|
+| Node.js | 20 이상 | `node -v` |
+| pnpm | 9 이상 (corepack로 호출) | `corepack pnpm -v` |
+| Chrome | Puppeteer가 자동 다운로드 | 첫 설치 시 자동 |
+| (선택) Anthropic API 키 | LLM 의미 추론 모드에서만 | [6장](#6-두-가지-변환-모드) |
+
+> **Windows 기준**으로 작성. 경로 구분자만 환경에 맞추면 macOS/Linux도 동일.
+
+---
+
+## 3. 설치 & 빌드
+
+```bash
+# 1) 의존성 설치 (첫 실행 시 Puppeteer가 Chrome을 ~/.cache에 받습니다 — 5~10분)
+corepack pnpm install
+
+# 2) 빌드 (TypeScript → dist/)
+corepack pnpm --filter @kdh/figma-ingest build
+```
+
+빌드가 끝나면 `packages/figma-ingest/dist/cli.js`가 생깁니다. 이게 CLI 엔트리입니다.
+
+> 소스(`src/*.ts`)를 고친 뒤에는 **반드시 다시 빌드**해야 CLI에 반영됩니다.
+
+---
+
+## 4. 빠른 시작 (1분)
+
+예제 입력(`tests/fixtures/simple-form.html`)을 변환해 봅니다.
+
+```bash
+node packages/figma-ingest/dist/cli.js \
+  packages/figma-ingest/tests/fixtures/simple-form.html \
+  out/simple-form.output.xml \
+  --no-llm
+```
+
+실행하면 이런 출력이 뜹니다:
+```
+Converting .../simple-form.html -> .../out/simple-form.output.xml (adaptive=false, noLlm=true)
+OK Wrote 3741 chars
+📐 보존율 100.0% (6/6)
+⚠️  안티패턴 1건 (critical 1)
+  [CRITICAL] ANTI-09 grd_007 — GridView grd_007: header/gBody 컬럼 id 불일치 ...
+```
+
+`out/simple-form.output.xml`이 생성됩니다. (리포트 읽는 법은 [7장](#7-실행-출력리포트-읽는-법), `--no-llm`에서 ANTI-09가 뜨는 이유는 [12장 FAQ](#12-문제-해결-faq).)
+
+---
+
+## 5. CLI 레퍼런스
+
+```
+node packages/figma-ingest/dist/cli.js <input.html> <output.xml> [옵션]
+```
+
+### 위치 인자 (필수, 순서 고정)
+| 인자 | 설명 |
+|---|---|
+| `<input.html>` | 변환할 입력 HTML 경로 |
+| `<output.xml>` | 결과 XML을 쓸 경로 (폴더는 미리 있어야 함) |
+
+### 옵션
+| 옵션 | 설명 | 기본 |
+|---|---|---|
+| `--no-llm` | LLM 의미 추론을 건너뜀(결정론 경로만). API 키 없이 동작 | LLM 시도 |
+| `--adaptive` | 반응형(상대폭) 변환 옵션 | off |
+| `--screenshot <path>` | 입력 HTML을 렌더한 PNG를 `<path>`에 저장(사람 검수용) | off |
+
+### 예시
+```bash
+# 결정론 변환 (API 키 불필요)
+node packages/figma-ingest/dist/cli.js in.html out.xml --no-llm
+
+# LLM 의미 추론 포함 (ANTHROPIC_API_KEY 필요)
+node packages/figma-ingest/dist/cli.js in.html out.xml
+
+# 입력 스크린샷도 같이
+node packages/figma-ingest/dist/cli.js in.html out.xml --screenshot in.png
+```
+
+> **종료 코드**: 변환 실패 시에만 1로 종료합니다. 안티패턴·유실이 있어도 **0으로 종료**(비파괴) — 리포트는 경고로만 출력되고 파일은 정상 생성됩니다.
+
+---
+
+## 6. 두 가지 변환 모드
+
+### (A) LLM 의미 추론 모드 (기본)
+화면을 보고 AI가 **DataMap/DataList(데이터 상자)**, **ref 바인딩**, **조회/저장 동작**을 채웁니다. 가장 완성도 높은 출력. `ANTHROPIC_API_KEY` 환경변수가 필요합니다.
+
+**API 키 설정 (Windows, 안전한 방법):**
+```powershell
+# 키를 코드/채팅에 절대 붙여넣지 말 것. 레지스트리 사용자 환경변수로:
+setx ANTHROPIC_API_KEY "sk-ant-..."
+# 새 터미널을 열어야 적용됨
+```
+도구는 실행 시 이 환경변수를 읽어 메모리에서만 사용하며, 로그에 키를 남기지 않습니다.
+
+**비용 가드**: 단일 변환 $1 초과 시 경고, 세션 누적 $10 상한. 실행 끝에 `💰 LLM 비용`이 표시됩니다.
+
+> 키가 없거나 클라이언트 초기화가 실패하면 **자동으로 `--no-llm` 모드로 강등**되어 계속 진행합니다 (에러로 멈추지 않음).
+
+### (B) `--no-llm` 결정론 모드
+LLM 없이 규칙 기반으로만 변환(Phase 0+1 동작). DataCollection/바인딩/조회·저장 동작은 생성되지 않습니다. 구조 변환·ID 규칙·버튼 modifier까지만. API 키 불필요, 빠르고 무료, 완전 재현 가능.
+
+| | LLM 모드 | `--no-llm` |
+|---|---|---|
+| DataMap/DataList | ✅ 추론 | ❌ 빈 dataCollection |
+| ref 바인딩 / submission | ✅ | ❌ |
+| 조회/저장 scwin 동작 | ✅ | ❌ (빈 onpageload) |
+| schbox 정규화·ID·버튼 | ✅ | ✅ |
+| API 키 | 필요 | 불필요 |
+
+---
+
+## 7. 실행 출력(리포트) 읽는 법
+
+실행이 끝나면 콘솔에 여러 줄이 뜹니다:
+
+- `OK Wrote N chars` — 출력 XML을 N글자로 정상 기록.
+- `📐 보존율 X% (preserved/total)` — 입력의 의미 요소(입력칸·버튼·표 컬럼) 중 출력에 보존된 비율. **100%면 변환에서 아무것도 안 잃음**. 100% 미만이면 아래 `⚠️ 유실` 목록에 무엇이 빠졌는지(`[field/button/gridColumn] 라벨`) 표시.
+- `✅ 안티패턴 검증 통과 (위반 0)` 또는 `⚠️ 안티패턴 N건 (critical M)` — deepsquare 금지패턴 9종 검사. 각 위반은 `[심각도] 룰코드 위치 — 설명` + `↳ 대안`(올바른 형태)으로 표시.
+- `🖼️ 입력 스크린샷 저장: ...` — `--screenshot` 사용 시.
+- `💰 LLM 비용: $...` — LLM 모드에서만.
+
+검사하는 안티패턴 9종(요약): #8 컴포넌트 ID 중복, #9 grid header/body 컬럼 불일치, #10 submission ref 미선언, #2 async/await 불일치(자동수정됨), #1 금지 API, #3 confirm/alert 직접 호출, #4 잘못된 ev: 이벤트, #11 grid header inputType, #15 reform 사용.
+
+---
+
+## 8. ⭐ 출력 XML을 "화면"으로 보는 법
+
+> **가장 자주 묻는 것**: 출력 `.xml`을 브라우저로 더블클릭하면 **화면이 안 나오고 XML 태그 트리만** 보입니다. 정상입니다.
+
+출력은 **WebSquare 전용 XML**(XHTML+XForms+`w2:`)이라, 일반 브라우저가 아니라 **WebSquare 엔진이 구동**해야 실제 화면이 됩니다. 목적별로:
+
+### (1) 그냥 디자인을 눈으로 보고 싶다
+- `--screenshot`로 저장한 PNG를 열거나,
+- **입력 HTML 파일**을 브라우저로 직접 엽니다 (이게 렌더 가능한 원본 디자인).
+
+### (2) 변환 결과를 진짜 WebSquare 화면으로 구동하고 싶다
+WebSquare 엔진(WRM workspace)이 필요합니다. 사내 WRM이 `C:/WebSquare_Studio/.../WRM/`에 있다면:
+1. 출력 XML을 `WebContent/ui/<폴더>/<화면ID>.xml`로 복사.
+2. 엔진 진입점으로 라우팅해서 열기: `websquare.html?w2xPath=/ui/<폴더>/<화면ID>.xml`
+3. 단, submission의 `action`이 `/TODO_VERIFY` placeholder라 **서버 호출은 미연결** — 레이아웃·바인딩 구조 **미리보기** 용도. 실제 조회/저장을 보려면 action URL을 실제 서버 엔드포인트로 바꿔야 합니다.
+
+### (3) 출력 내용을 텍스트로 점검하고 싶다
+`.xml`을 편집기로 열면 됩니다. 핵심만 보려면:
+- `<w2:dataCollection>` — 추론된 데이터 상자(DataMap/DataList)
+- `ref="data:..."` — 입력칸↔데이터 연결
+- `<script><![CDATA[` 안 `scwin.onpageload`/`*_onclick` — 조회·저장 동작
+- `<!-- TODO: ... -->` 주석 — **사람이 확인/보완해야 할 지점**(특히 action URL)
+
+---
+
+## 9. 입력 HTML 작성 가이드
+
+도구는 표준 HTML 구조를 읽어 컴포넌트를 분류합니다. 잘 변환되려면:
+
+| 원하는 것 | 권장 HTML |
+|---|---|
+| 입력칸 + 라벨 | `<label for="empCd">사번</label><input id="empCd">` (label-for 연결 권장) |
+| 셀렉트박스 | `<select id="deptCd">...</select>` |
+| 날짜 | `<input type="date" id="orderDate">` |
+| 버튼 (조회/저장/취소/초기화/엑셀) | `<button type="button">조회</button>` — **라벨 텍스트로 역할 자동 분류** |
+| 표(그리드) | `<table><thead><tr><th>사번</th>...</tr></thead><tbody>...</tbody></table>` — `<th>` 텍스트가 컬럼 라벨 |
+| 검색영역 묶음 | 검색 input들 + "조회" 버튼을 한 영역에 (자동으로 표준 schbox로 정규화) |
+| 상세영역(마스터-디테일) | 그리드 아래 별도 입력 테이블 (그리드와 같은 DataList에 자동 바인딩) |
+
+팁:
+- **버튼 텍스트가 동작을 결정**합니다: 조회/검색→검색, 저장→저장흐름, 취소→되돌리기, 초기화·엑셀 다운로드→modifier.
+- `<th>` 헤더가 있어야 그리드 컬럼이 라벨과 함께 인식됩니다.
+- `id`를 주면 의미명으로 활용되고, 없으면 자동 번호가 붙습니다.
+
+예제는 `packages/figma-ingest/tests/fixtures/`의 `simple-form.html`(검색폼+그리드), `search-grid.html`(검색+다중버튼), `master-detail.html`(검색+그리드+상세폼) 참고.
+
+---
+
+## 10. 프로그램(코드)에서 호출하기
+
+```typescript
+import { convertHtmlToWebSquare } from '@kdh/figma-ingest/pipeline';
+import { LLMClient } from '@kdh/figma-ingest/stage3/llm-client';
+
+const xml = await convertHtmlToWebSquare(htmlString, {
+  llmClient: new LLMClient({ /* tracker 등 */ }),  // 없으면 결정론 경로
+  noLlm: false,            // true면 LLM 단계 skip
+  adaptive: false,         // 반응형 옵션
+  onStage: (name, payload) => {
+    // 중간 단계 결과 관찰 (디버그/리포트 수집)
+    // name: 'stage0-extraction' | 'stage1-absolute' | 'stage2-relative'
+    //     | 'stage2.5-schbox' | 'stage3-enriched' | 'validation'
+    //     | 'preservation' | 'phase1-finalized'
+    if (name === 'preservation') console.log('보존율', payload);
+    if (name === 'validation') console.log('위반', payload);
+  },
+});
+```
+
+- 반환값은 **출력 XML 문자열**.
+- 검증/보존 리포트는 `onStage('validation' | 'preservation')` 콜백으로 수집하거나, 별도로:
+```typescript
+import { validateAntiPatterns } from '@kdh/figma-ingest/validate/anti-pattern-validator';
+import { computePreservation } from '@kdh/figma-ingest/validate/preservation-report';
+const violations = validateAntiPatterns(xml);          // Violation[]
+// computePreservation은 extraction(Stage0 결과)이 필요 → onStage('stage0-extraction')로 수집
+```
+- 테스트 종료 시 `closeBrowser()`(`dom-extractor`)로 Puppeteer 정리.
+
+---
+
+## 11. 테스트 & 골든
+
+```bash
+# 전체 테스트 (Puppeteer 포함, 277개)
+corepack pnpm --filter @kdh/figma-ingest test
+
+# 특정 모듈만
+corepack pnpm --filter @kdh/figma-ingest test preservation-report
+
+# 실제 LLM smoke (opt-in, API 키 + 비용 발생)
+corepack pnpm --filter @kdh/figma-ingest test:llm:live
+```
+
+**골든(정답지) 재생성** — legacy 변환/파이프라인/Mock LLM 응답을 *의도적으로* 바꾼 경우에만:
+```bash
+corepack pnpm --filter @kdh/figma-ingest build
+corepack pnpm --filter @kdh/figma-ingest test:golden:regenerate
+```
+재생성 후 **반드시 `git diff`로 골든 변경을 확인**하세요. (참고: 골든 비교는 Puppeteer 렌더 폭 ±px 흔들림을 무시하도록 정규화되어 있어, 구조·라벨·ref·핸들러만 엄격 비교합니다.)
+
+---
+
+## 12. 문제 해결 (FAQ)
+
+**Q. 출력 `.xml`을 브라우저로 열었더니 화면이 안 나와요.**
+정상입니다. WebSquare XML은 엔진이 구동해야 합니다 → [8장](#8-출력-xml을-화면으로-보는-법).
+
+**Q. `--no-llm`로 돌렸더니 `ANTI-09 grid header/body 컬럼 불일치`가 떠요.**
+`--no-llm`은 grid-reconciler(header/body 컬럼 id 정렬)가 IR이 없어 실행되지 않습니다. 그래서 그리드 머리(`column1..`)와 몸통(`col_1..`) id가 어긋난 채 나옵니다. **LLM 모드에서는 정렬되어 위반이 사라집니다.** 결정론 출력만 필요하면서 이 경고가 거슬리면 LLM 모드를 쓰거나, 해당 갭 수정은 백로그(결정론 경로 grid 정렬)로 추적 중입니다.
+
+**Q. `LLM client 초기화 실패`가 떠요.**
+`ANTHROPIC_API_KEY`가 없거나 잘못됨 → 자동으로 `--no-llm`으로 진행됩니다. LLM 출력을 원하면 [6장](#6-두-가지-변환-모드)대로 키를 설정하고 새 터미널에서 실행.
+
+**Q. 소스를 고쳤는데 CLI 동작이 그대로예요.**
+빌드를 다시 하세요: `corepack pnpm --filter @kdh/figma-ingest build`.
+
+**Q. 출력에 `/TODO_VERIFY`, `<!-- TODO ... -->`가 있어요.**
+도구가 자동으로 알 수 없는 값(특히 서버 action URL, 추가 필수필드)을 **사람이 확인하라고 표시**한 자리입니다. 실제 배포 전 채워야 합니다.
+
+**Q. 폴더가 없다고 출력 기록이 실패해요.**
+출력 경로의 상위 폴더를 미리 만들어 주세요 (`mkdir out`).
+
+---
+
+## 13. 부록: 파이프라인 단계 요약
+
+| 단계 | 하는 일 | 모듈 |
+|---|---|---|
+| Stage 0 | 입력 HTML을 Puppeteer로 렌더 → 컴포넌트·좌표 추출 | `dom-extractor.ts` |
+| Stage 1 | 컴포넌트 → 절대좌표 XML | `absolute-xml-builder.ts` |
+| Stage 2 | 절대→상대 + 섹션 분류(schbox/grid/…) | `relative-converter.ts` |
+| Stage 2.5 | 검색영역 표준 schbox 정규화 | `stage3/schbox-normalizer.ts` |
+| Stage 3 | (LLM) DataMap/DataList 추론·주입 | `stage3/data-collection-inferrer.ts` |
+| Stage 3.5 | ref 바인딩·grid 정렬·submission·상세 바인딩 | `stage3/data-binder.ts` 외 |
+| Phase 1 | ID prefix(UI-01)·버튼 modifier | `id-renamer.ts`, `button-modifier.ts` |
+| Stage 4 | scwin 조회/저장 핸들러 + async 자동수정 | `stage3/scwin-scaffolder.ts`, `validate/anti-pattern-fixer.ts` |
+| 검증 | 안티패턴 9종 + 변환 보존율 | `validate/anti-pattern-validator.ts`, `validate/preservation-report.ts` |
+
+전체 설계·단계별 계획은 [`docs/superpowers/specs/`](superpowers/specs/) · [`docs/superpowers/plans/`](superpowers/plans/) 참고.
+
+---
+
+*문서 끝. 추가로 궁금한 사용 시나리오가 있으면 알려주세요.*
