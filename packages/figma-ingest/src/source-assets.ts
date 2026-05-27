@@ -70,6 +70,8 @@ export function extractSourceScript(html: string): string {
 export function injectSourceReference(xml: string, refs: { css?: string; js?: string }): string {
   const names = [refs.css, refs.js].filter(Boolean) as string[];
   if (names.length === 0) return xml;
-  const comment = `<!-- 원본 소스 참조(자동 적용 안 됨, 수동 포팅용): ${names.join(' / ')} -->`;
+  // 파일명에 '--'가 있으면 XML 주석이 깨지므로 치환(주석 안전 보장)
+  const safe = names.join(' / ').replace(/--+/g, '-');
+  const comment = `<!-- 원본 소스 참조(자동 적용 안 됨, 수동 포팅용): ${safe} -->`;
   return xml.replace(/(<head\b[^>]*>)/, (full) => `${full}\n${comment}`);
 }
